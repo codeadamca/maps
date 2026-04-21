@@ -6,18 +6,59 @@
   <title>Mapbox Export App</title>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
   <style>
-    body, html { height: 100%; margin: 0; }
-    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-    #controls { position: absolute; top: 10px; left: 10px; z-index: 10; background: rgba(255,255,255,0.9); padding: 10px; border-radius: 4px; }
+    html, body { height: 100%; margin: 0; }
+    body { height: 100vh; width: 100vw; overflow: hidden; }
+    #container {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+    }
+    #side-panel {
+      width: 20vw;
+      max-width: 300px;
+      min-width: 180px;
+      background: #f8f9fa;
+      border-right: 1px solid #ddd;
+      padding: 24px 16px;
+      box-sizing: border-box;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    #map {
+      flex: 1 1 0;
+      position: relative;
+      min-width: 0;
+      height: 100vh;
+    }
+    #controls { background: none; border: none; padding: 0; position: static; box-shadow: none; }
     button { margin: 2px; }
+    .curve-handle {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: #e67e22;
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
+      cursor: grab;
+    }
   </style>
 </head>
 <body>
-  <div id="controls">
-    <button id="export-geojson">Export GeoJSON</button>
-    <button id="export-svg">Export SVG</button>
+  <div id="container">
+    <div id="side-panel">
+      <h2>Mapbox Export App</h2>
+      <div id="controls">
+        <button id="add-points">Add Points</button>
+        <button id="export-svg">Export SVG</button>
+        <button id="curves">Curves</button>
+      </div>
+      <!-- Add more panel content here if needed -->
+    </div>
+    <div id="map"></div>
   </div>
-  <div id="map"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <script src="config.js"></script>
   <script src="app.js"></script>
