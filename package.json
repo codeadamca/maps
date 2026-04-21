@@ -1,5 +1,13 @@
 {
+  "name": "mapbox-export-app",
+  "version": "1.0.0",
+  "description": "One-page Node.js app with Mapbox and export feature",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
-    "dotenv": "^17.4.2"
+    "express": "^4.18.2",
+    "dotenv": "17.4.2"
   }
 }
