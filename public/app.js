@@ -5,7 +5,8 @@ const map = new mapboxgl.Map({
   container: 'map',
   style: 'mapbox://styles/mapbox/streets-v11',
   center: [-79.86622015711724, 45.64789087148891], // Updated center
-  zoom: 13
+  zoom: 13,
+  preserveDrawingBuffer: true
 });
 
 // Disable map drag to prevent panning
@@ -13,6 +14,16 @@ map.dragPan.disable();
 
 // Enable zoom and rotation controls
 map.addControl(new mapboxgl.NavigationControl());
+
+let hikingTrails = [];
+let selectedTrailIds = new Set();
+let activeTrailRequestId = 0;
+let trailWarning = '';
+
+const trailListElement = document.getElementById('trail-list');
+const trailStatusElement = document.getElementById('trail-status');
+const hikingTrailSourceId = 'hiking-trails-source';
+const hikingTrailLayerId = 'hiking-trails-layer';
 
 // --- Add Points and Draw Polyline (modified to support curves and draggable markers) ---
 let addPointsMode = false;
@@ -22,6 +33,163 @@ let markerObjs = [];
 let distanceLabels = [];
 let curvesMode = false;
 let curveData = {}; // { lineId: [ {p1, p2, c} ] }
+
+function emptyTrailCollection() {
+  return {
+    type: 'FeatureCollection',
+    features: []
+  };
+}
+
+function getVisibleBbox() {
+  try {
+    const bounds = map.getBounds();
+    return [
+      bounds.getWest(),
+      bounds.getSouth(),
+      bounds.getEast(),
+      bounds.getNorth()
+    ];
+  } catch (error) {
+    const center = map.getCenter();
+    const lngPadding = 0.12;
+    const latPadding = 0.09;
+    return [
+      center.lng - lngPadding,
+      center.lat - latPadding,
+      center.lng + lngPadding,
+      center.lat + latPadding
+    ];
+  }
+}
+
+function renderTrailList() {
+  trailListElement.replaceChildren();
+
+  if (trailWarning) {
+    trailStatusElement.textContent = trailWarning;
+    return;
+  }
+
+  if (hikingTrails.length === 0) {
+    trailStatusElement.textContent = 'No named hiking trails found in the current map view.';
+    return;
+  }
+
+  trailStatusElement.textContent = 'Check a trail to draw it on the map.';
+
+  hikingTrails.forEach(trail => {
+    const label = document.createElement('label');
+    label.className = 'trail-item';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = selectedTrailIds.has(trail.id);
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) {
+        selectedTrailIds.add(trail.id);
+      } else {
+        selectedTrailIds.delete(trail.id);
+      }
+
+      updateTrailLayer();
+    });
+
+    const text = document.createElement('span');
+  const metaParts = [trail.sourceType, trail.surface].filter(Boolean);
+  const meta = metaParts.length > 0 ? `<div class="trail-meta">${metaParts.join(' • ')}</div>` : '';
+    text.innerHTML = `<div>${trail.name}</div>${meta}`;
+
+    label.append(checkbox, text);
+    trailListElement.append(label);
+  });
+}
+
+function updateTrailLayer() {
+  const source = map.getSource(hikingTrailSourceId);
+  if (!source) {
+    return;
+  }
+
+  source.setData({
+    type: 'FeatureCollection',
+    features: hikingTrails
+      .filter(trail => selectedTrailIds.has(trail.id))
+      .map(trail => ({
+      type: 'Feature',
+      properties: {
+        id: trail.id,
+        name: trail.name,
+        surface: trail.surface,
+        sourceType: trail.sourceType
+      },
+      geometry: trail.geometry
+    }))
+  });
+}
+
+async function loadTrailsForVisibleArea() {
+  const requestId = ++activeTrailRequestId;
+  trailStatusElement.textContent = 'Loading trails for the current map view...';
+
+  try {
+    const bbox = getVisibleBbox().join(',');
+    const response = await fetch(`/api/hiking-trails?bbox=${encodeURIComponent(bbox)}`);
+    const payload = await response.json();
+
+    if (!response.ok) {
+      throw new Error(payload.error || 'Unable to load trails');
+    }
+
+    if (requestId !== activeTrailRequestId) {
+      return;
+    }
+
+    hikingTrails = payload.trails || [];
+    trailWarning = payload.warning || '';
+    selectedTrailIds = new Set(
+      hikingTrails
+        .filter(trail => selectedTrailIds.has(trail.id))
+        .map(trail => trail.id)
+    );
+    renderTrailList();
+    updateTrailLayer();
+  } catch (error) {
+    if (requestId !== activeTrailRequestId) {
+      return;
+    }
+
+    hikingTrails = [];
+    trailWarning = 'Trail data is temporarily unavailable.';
+    selectedTrailIds.clear();
+    renderTrailList();
+    updateTrailLayer();
+  }
+}
+
+map.on('load', () => {
+  map.addSource(hikingTrailSourceId, {
+    type: 'geojson',
+    data: emptyTrailCollection()
+  });
+
+  map.addLayer({
+    id: hikingTrailLayerId,
+    type: 'line',
+    source: hikingTrailSourceId,
+    paint: {
+      'line-color': '#2d6a4f',
+      'line-width': 4,
+      'line-opacity': 0.85
+    }
+  });
+
+  loadTrailsForVisibleArea();
+});
+
+map.on('moveend', loadTrailsForVisibleArea);
+
+loadTrailsForVisibleArea();
 
 function getOrderedPointsForLine(lineId) {
   const segments = curveData[lineId] || [];

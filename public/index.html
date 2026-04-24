@@ -25,6 +25,7 @@
       display: flex;
       flex-direction: column;
       gap: 16px;
+      overflow: hidden;
     }
     #map {
       flex: 1 1 0;
@@ -34,6 +35,42 @@
     }
     #controls { background: none; border: none; padding: 0; position: static; box-shadow: none; }
     button { margin: 2px; }
+    .panel-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 0;
+    }
+    .section-title {
+      margin: 0;
+      font-size: 1rem;
+    }
+    #trail-status {
+      margin: 0;
+      color: #5f6b76;
+      font-size: 0.9rem;
+    }
+    #trail-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .trail-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 0.95rem;
+      line-height: 1.3;
+    }
+    .trail-item input {
+      margin-top: 2px;
+    }
+    .trail-meta {
+      color: #6c757d;
+      font-size: 0.82rem;
+    }
     .curve-handle {
       width: 18px;
       height: 18px;
@@ -54,7 +91,11 @@
         <button id="export-svg">Export SVG</button>
         <button id="curves">Curves</button>
       </div>
-      <!-- Add more panel content here if needed -->
+      <section class="panel-section">
+        <h3 class="section-title">Hiking Trails Nearby</h3>
+        <p id="trail-status">Loading trails for the current map area...</p>
+        <div id="trail-list"></div>
+      </section>
     </div>
     <div id="map"></div>
   </div>
