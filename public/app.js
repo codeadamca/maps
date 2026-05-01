@@ -1,29 +1,451 @@
 // Set your Mapbox access token here
 mapboxgl.accessToken = window.MAPBOX_ACCESS_TOKEN;
 
+const DEFAULT_VIEW_STATE = {
+  center: [-79.86622015711724, 45.64789087148891],
+  zoom: 11
+};
+const VIEW_STATE_STORAGE_KEY = 'maps:last-view-state';
+
+function loadInitialViewState() {
+  try {
+    const savedViewState = window.localStorage.getItem(VIEW_STATE_STORAGE_KEY);
+
+    if (!savedViewState) {
+      return DEFAULT_VIEW_STATE;
+    }
+
+    const parsedViewState = JSON.parse(savedViewState);
+    const center = Array.isArray(parsedViewState.center) ? parsedViewState.center : [];
+    const [lng, lat] = center;
+    const zoom = Number(parsedViewState.zoom);
+
+    if (!Number.isFinite(lng) || !Number.isFinite(lat) || !Number.isFinite(zoom)) {
+      return DEFAULT_VIEW_STATE;
+    }
+
+    return {
+      center: [lng, lat],
+      zoom
+    };
+  } catch (error) {
+    return DEFAULT_VIEW_STATE;
+  }
+}
+
+function saveCurrentViewState() {
+  try {
+    const center = map.getCenter();
+    window.localStorage.setItem(VIEW_STATE_STORAGE_KEY, JSON.stringify({
+      center: [center.lng, center.lat],
+      zoom: map.getZoom()
+    }));
+  } catch (error) {
+    // Ignore storage failures and keep the in-memory view.
+  }
+}
+
+const initialViewState = loadInitialViewState();
+
 const map = new mapboxgl.Map({
-  container: 'map',
-  style: 'mapbox://styles/mapbox/streets-v11',
-  center: [-79.86622015711724, 45.64789087148891], // Updated center
-  zoom: 13,
+  container: 'map-canvas',
+  style: 'mapbox://styles/mapbox/outdoors-v12',
+  center: initialViewState.center,
+  zoom: initialViewState.zoom,
+  attributionControl: false,
   preserveDrawingBuffer: true
 });
 
-// Disable map drag to prevent panning
-map.dragPan.disable();
-
-// Enable zoom and rotation controls
-map.addControl(new mapboxgl.NavigationControl());
+window.map = map;
+map.dragPan.enable();
+map.on('moveend', saveCurrentViewState);
 
 let hikingTrails = [];
 let selectedTrailIds = new Set();
 let activeTrailRequestId = 0;
 let trailWarning = '';
+const DEFAULT_FRAME_GEOMETRY = {
+  naturalWidth: 1544,
+  naturalHeight: 2116,
+  openingRatios: {
+    left: 0.15738341968911918,
+    top: 0.12948960302457466,
+    width: 0.6709844559585493,
+    height: 0.6701323251417769
+  }
+};
 
 const trailListElement = document.getElementById('trail-list');
 const trailStatusElement = document.getElementById('trail-status');
+const mapStageElement = document.getElementById('map-stage');
+const mapWindowElement = document.getElementById('map-window');
+const glazingCopyElement = document.getElementById('glazing-copy');
+const mapTitleElement = document.getElementById('map-title');
+const mapSubtitleElement = document.getElementById('map-subtitle');
+const frameImageElement = document.getElementById('frame-image');
+const frameAssetPath = 'frame.png';
+let frameGeometry = DEFAULT_FRAME_GEOMETRY;
+let frameGeometryPromise = null;
 const hikingTrailSourceId = 'hiking-trails-source';
 const hikingTrailLayerId = 'hiking-trails-layer';
+const referencePalette = {
+  paper: '#f3ecdf',
+  paperShade: '#ebe1d0',
+  ink: '#30475c',
+  line: '#6f8696',
+  contour: '#b8a898',
+  building: '#f7f1e7',
+  trail: '#5b7385'
+};
+
+function setPaintIfSupported(layerId, property, value) {
+  if (!map.getLayer(layerId)) {
+    return;
+  }
+
+  try {
+    map.setPaintProperty(layerId, property, value);
+  } catch (error) {
+    // Ignore unsupported paint properties across different layer types.
+  }
+}
+
+function setLayoutIfSupported(layerId, property, value) {
+  if (!map.getLayer(layerId)) {
+    return;
+  }
+
+  try {
+    map.setLayoutProperty(layerId, property, value);
+  } catch (error) {
+    // Ignore unsupported layout properties across different layer types.
+  }
+}
+
+function loadImageAsDataUrl(assetPath) {
+  const url = new URL(assetPath, window.location.href);
+
+  return fetch(url)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Unable to load frame image');
+      }
+
+      return response.blob();
+    })
+    .then(blob => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Unable to encode frame image'));
+      reader.readAsDataURL(blob);
+    }));
+}
+
+function escapeXml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&apos;');
+}
+
+function getTextPlacement(element) {
+  const stageRect = mapStageElement.getBoundingClientRect();
+  const elementRect = element.getBoundingClientRect();
+  const computedStyle = window.getComputedStyle(element);
+
+  return {
+    text: element.textContent.trim(),
+    x: (elementRect.left - stageRect.left) + (elementRect.width / 2),
+    y: elementRect.bottom - stageRect.top,
+    fontSize: computedStyle.fontSize,
+    fontWeight: computedStyle.fontWeight,
+    letterSpacing: computedStyle.letterSpacing,
+    lineHeight: computedStyle.lineHeight,
+    fill: computedStyle.color
+  };
+}
+
+function loadFrameGeometry() {
+  if (frameGeometryPromise) {
+    return frameGeometryPromise;
+  }
+
+  frameGeometryPromise = new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        const context = canvas.getContext('2d', { willReadFrequently: true });
+
+        context.drawImage(image, 0, 0);
+
+        const { data, width, height } = context.getImageData(0, 0, canvas.width, canvas.height);
+        const visited = new Uint8Array(width * height);
+        const queue = [];
+        const alphaAt = (x, y) => data[(y * width + x) * 4 + 3];
+        const push = (x, y) => {
+          if (x < 0 || y < 0 || x >= width || y >= height) {
+            return;
+          }
+
+          const index = y * width + x;
+          if (visited[index] || alphaAt(x, y) !== 0) {
+            return;
+          }
+
+          visited[index] = 1;
+          queue.push(index);
+        };
+
+        for (let x = 0; x < width; x += 1) {
+          push(x, 0);
+          push(x, height - 1);
+        }
+
+        for (let y = 0; y < height; y += 1) {
+          push(0, y);
+          push(width - 1, y);
+        }
+
+        while (queue.length > 0) {
+          const index = queue.shift();
+          const x = index % width;
+          const y = Math.floor(index / width);
+
+          push(x + 1, y);
+          push(x - 1, y);
+          push(x, y + 1);
+          push(x, y - 1);
+        }
+
+        let minX = width;
+        let minY = height;
+        let maxX = -1;
+        let maxY = -1;
+
+        for (let y = 0; y < height; y += 1) {
+          for (let x = 0; x < width; x += 1) {
+            const index = y * width + x;
+            if (alphaAt(x, y) === 0 && !visited[index]) {
+              minX = Math.min(minX, x);
+              minY = Math.min(minY, y);
+              maxX = Math.max(maxX, x);
+              maxY = Math.max(maxY, y);
+            }
+          }
+        }
+
+        if (maxX === -1 || maxY === -1) {
+          frameGeometry = DEFAULT_FRAME_GEOMETRY;
+          resolve(frameGeometry);
+          return;
+        }
+
+        frameGeometry = {
+          naturalWidth: width,
+          naturalHeight: height,
+          openingRatios: {
+            left: minX / width,
+            top: minY / height,
+            width: (maxX - minX + 1) / width,
+            height: (maxY - minY + 1) / height
+          }
+        };
+
+        resolve(frameGeometry);
+      } catch (error) {
+        frameGeometry = DEFAULT_FRAME_GEOMETRY;
+        reject(error);
+      }
+    };
+
+    image.onerror = () => {
+      frameGeometry = DEFAULT_FRAME_GEOMETRY;
+      reject(new Error('Unable to analyze frame image'));
+    };
+
+    image.src = `${frameAssetPath}?v=${Date.now()}`;
+  }).catch(() => frameGeometry);
+
+  return frameGeometryPromise;
+}
+
+function getFramePlacement() {
+  const stageRect = mapStageElement.getBoundingClientRect();
+  const overlayRect = frameImageElement.getBoundingClientRect();
+
+  if (!stageRect.width || !stageRect.height || !overlayRect.width || !overlayRect.height) {
+    return {
+      width: mapStageElement.clientWidth,
+      height: mapStageElement.clientHeight,
+      x: 0,
+      y: 0
+    };
+  }
+
+  const overlayAspectRatio = overlayRect.width / overlayRect.height;
+  const frameAspectRatio = frameGeometry.naturalWidth / frameGeometry.naturalHeight;
+  let width;
+  let height;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  if (overlayAspectRatio > frameAspectRatio) {
+    height = overlayRect.height;
+    width = height * frameAspectRatio;
+    offsetX = (overlayRect.width - width) / 2;
+  } else {
+    width = overlayRect.width;
+    height = width / frameAspectRatio;
+    offsetY = (overlayRect.height - height) / 2;
+  }
+
+  return {
+    width,
+    height,
+    x: (overlayRect.left - stageRect.left) + offsetX,
+    y: (overlayRect.top - stageRect.top) + offsetY
+  };
+}
+
+function getFrameOpeningPlacement() {
+  const framePlacement = getFramePlacement();
+  const { openingRatios } = frameGeometry;
+
+  return {
+    x: framePlacement.x + (framePlacement.width * openingRatios.left),
+    y: framePlacement.y + (framePlacement.height * openingRatios.top),
+    width: framePlacement.width * openingRatios.width,
+    height: framePlacement.height * openingRatios.height
+  };
+}
+
+function getGlazingCopyPlacement() {
+  const framePlacement = getFramePlacement();
+  const openingPlacement = getFrameOpeningPlacement();
+  const frameBottom = framePlacement.y + framePlacement.height;
+  const openingBottom = openingPlacement.y + openingPlacement.height;
+  const bottomGlazingHeight = Math.max(frameBottom - openingBottom, 0);
+
+  if (bottomGlazingHeight < 24) {
+    return {
+      x: openingPlacement.x,
+      y: openingPlacement.y + (openingPlacement.height * 0.76),
+      width: openingPlacement.width,
+      height: openingPlacement.height * 0.2
+    };
+  }
+
+  const horizontalInset = Math.max(openingPlacement.width * 0.04, 12);
+  const bottomInset = Math.min(Math.max(bottomGlazingHeight * 0.28, 18), bottomGlazingHeight * 0.42);
+  const height = Math.max(bottomGlazingHeight - bottomInset, 32);
+
+  return {
+    x: openingPlacement.x + horizontalInset,
+    y: openingBottom,
+    width: Math.max(openingPlacement.width - (horizontalInset * 2), 40),
+    height
+  };
+}
+
+async function updateMapWindowLayout() {
+  await loadFrameGeometry();
+  const openingPlacement = getFrameOpeningPlacement();
+  const glazingPlacement = getGlazingCopyPlacement();
+
+  mapWindowElement.style.left = `${openingPlacement.x}px`;
+  mapWindowElement.style.top = `${openingPlacement.y}px`;
+  mapWindowElement.style.width = `${openingPlacement.width}px`;
+  mapWindowElement.style.height = `${openingPlacement.height}px`;
+  glazingCopyElement.style.left = `${glazingPlacement.x}px`;
+  glazingCopyElement.style.top = `${glazingPlacement.y}px`;
+  glazingCopyElement.style.width = `${glazingPlacement.width}px`;
+  glazingCopyElement.style.height = `${glazingPlacement.height}px`;
+
+  if (map) {
+    map.resize();
+  }
+}
+
+function applyReferenceMapStyle() {
+  const layers = map.getStyle().layers || [];
+
+  layers.forEach(layer => {
+    const layerId = layer.id;
+    const sourceLayer = layer['source-layer'] || '';
+    const layerKey = `${layerId} ${sourceLayer}`.toLowerCase();
+
+    if (layer.type === 'background') {
+      setPaintIfSupported(layerId, 'background-color', referencePalette.paper);
+      return;
+    }
+
+    if (/(poi|airport|transit|road-number-shield)/.test(layerKey)) {
+      setLayoutIfSupported(layerId, 'visibility', 'none');
+      return;
+    }
+
+    if (layer.type === 'symbol' && /(place|settlement|road|street)/.test(layerKey)) {
+      setLayoutIfSupported(layerId, 'visibility', 'none');
+      return;
+    }
+
+    if (layer.type === 'fill' && /(water|lake|river|stream|ocean)/.test(layerKey)) {
+      setPaintIfSupported(layerId, 'fill-color', referencePalette.ink);
+      setPaintIfSupported(layerId, 'fill-opacity', 0.96);
+      return;
+    }
+
+    if (layer.type === 'line' && /(water|lake|river|stream|ocean)/.test(layerKey)) {
+      setPaintIfSupported(layerId, 'line-color', referencePalette.ink);
+      setPaintIfSupported(layerId, 'line-opacity', 0.85);
+      return;
+    }
+
+    if (layer.type === 'line' && /(contour|hillshade)/.test(layerKey)) {
+      setPaintIfSupported(layerId, 'line-color', referencePalette.contour);
+      setPaintIfSupported(layerId, 'line-width', 0.8);
+      setPaintIfSupported(layerId, 'line-opacity', 0.72);
+      return;
+    }
+
+    if (layer.type === 'line' && /(road|street|path|motorway|bridge|tunnel)/.test(layerKey)) {
+      setPaintIfSupported(layerId, 'line-color', referencePalette.line);
+      setPaintIfSupported(layerId, 'line-opacity', 0.65);
+      return;
+    }
+
+    if (layer.type === 'fill' && /(building)/.test(layerKey)) {
+      setPaintIfSupported(layerId, 'fill-color', referencePalette.building);
+      setPaintIfSupported(layerId, 'fill-outline-color', referencePalette.contour);
+      setPaintIfSupported(layerId, 'fill-opacity', 0.45);
+      return;
+    }
+
+    if (layer.type === 'fill' && /(landuse|park|wood|grass|landcover)/.test(layerKey)) {
+      setPaintIfSupported(layerId, 'fill-color', referencePalette.paperShade);
+      setPaintIfSupported(layerId, 'fill-opacity', 0.22);
+      return;
+    }
+
+    if (layer.type === 'symbol' && /(road-label|water-label|natural-label)/.test(layerKey)) {
+      setPaintIfSupported(layerId, 'text-color', referencePalette.line);
+      setPaintIfSupported(layerId, 'text-halo-color', referencePalette.paper);
+      setPaintIfSupported(layerId, 'text-halo-width', 1.2);
+    }
+  });
+
+  map.setFog({
+    color: referencePalette.paper,
+    'high-color': referencePalette.paper,
+    'space-color': referencePalette.paper,
+    'star-intensity': 0
+  });
+}
 
 // --- Add Points and Draw Polyline (modified to support curves and draggable markers) ---
 let addPointsMode = false;
@@ -168,6 +590,8 @@ async function loadTrailsForVisibleArea() {
 }
 
 map.on('load', () => {
+  applyReferenceMapStyle();
+
   map.addSource(hikingTrailSourceId, {
     type: 'geojson',
     data: emptyTrailCollection()
@@ -178,9 +602,9 @@ map.on('load', () => {
     type: 'line',
     source: hikingTrailSourceId,
     paint: {
-      'line-color': '#2d6a4f',
-      'line-width': 4,
-      'line-opacity': 0.85
+      'line-color': referencePalette.trail,
+      'line-width': 3,
+      'line-opacity': 0.9
     }
   });
 
@@ -417,10 +841,18 @@ map.on('mousedown', function(e) {
 });
 
 // --- Export SVG ---
-function exportSVG() {
+async function exportSVG() {
+  await loadFrameGeometry();
   const mapCanvas = map.getCanvas();
   const imgData = mapCanvas.toDataURL('image/png');
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${mapCanvas.width}' height='${mapCanvas.height}'><image href='${imgData}' width='100%' height='100%'/></svg>`;
+  const frameData = await loadImageAsDataUrl(frameAssetPath);
+  const stageWidth = mapStageElement.clientWidth;
+  const stageHeight = mapStageElement.clientHeight;
+  const framePlacement = getFramePlacement();
+  const openingPlacement = getFrameOpeningPlacement();
+  const titlePlacement = getTextPlacement(mapTitleElement);
+  const subtitlePlacement = getTextPlacement(mapSubtitleElement);
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${stageWidth}' height='${stageHeight}' viewBox='0 0 ${stageWidth} ${stageHeight}'><style>@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap');</style><image href='${imgData}' x='${openingPlacement.x}' y='${openingPlacement.y}' width='${openingPlacement.width}' height='${openingPlacement.height}' preserveAspectRatio='none'/><text x='${titlePlacement.x}' y='${titlePlacement.y}' text-anchor='middle' fill='${titlePlacement.fill}' font-family='Playfair Display, Georgia, serif' font-size='${titlePlacement.fontSize}' font-weight='${titlePlacement.fontWeight}' letter-spacing='${titlePlacement.letterSpacing}'>${escapeXml(titlePlacement.text)}</text><text x='${subtitlePlacement.x}' y='${subtitlePlacement.y}' text-anchor='middle' fill='${subtitlePlacement.fill}' font-family='Playfair Display, Georgia, serif' font-size='${subtitlePlacement.fontSize}' font-weight='${subtitlePlacement.fontWeight}' letter-spacing='${subtitlePlacement.letterSpacing}'>${escapeXml(subtitlePlacement.text)}</text><image href='${frameData}' x='${framePlacement.x}' y='${framePlacement.y}' width='${framePlacement.width}' height='${framePlacement.height}' preserveAspectRatio='xMidYMid meet'/></svg>`;
   const blob = new Blob([svg], {type: 'image/svg+xml'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -431,6 +863,8 @@ function exportSVG() {
 }
 
 document.getElementById('export-svg').onclick = exportSVG;
+window.addEventListener('resize', updateMapWindowLayout);
+updateMapWindowLayout();
 
 // Helper: get all line segments for all lines
 function getAllLineSegments() {
@@ -583,7 +1017,7 @@ function drawCurvesForLine(lineId) {
       source: lineId,
       layout: {},
       paint: {
-        'line-color': '#e67e22',
+        'line-color': referencePalette.trail,
         'line-width': 3
       }
     });
