@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Map Poster</title>
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700&family=Oswald:wght@600;700&family=Playfair+Display:wght@600;700&family=Raleway:wght@600;700&display=swap" rel="stylesheet">
+  <link href="styles.css" rel="stylesheet">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <header class="sidebar-header">
+        <h1>Map Poster</h1>
+        <p class="sidebar-tagline">Design a custom map print for any place.</p>
+      </header>
+
+      <section class="location-panel">
+        <h2 class="location-heading">Location</h2>
+        <div class="search-wrap">
+          <input type="search" id="location-search" placeholder="Search city or region…" autocomplete="off">
+          <ul id="search-results" class="search-results" hidden></ul>
+        </div>
+      </section>
+
+      <nav class="accordion" id="sidebar-accordion" aria-label="Poster settings">
+        <section class="accordion-item" data-accordion-id="theme">
+          <button type="button" class="accordion-trigger" aria-expanded="false" aria-controls="panel-theme" id="trigger-theme">
+            <span class="accordion-label">Theme</span>
+            <span class="accordion-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-panel" id="panel-theme" role="region" aria-labelledby="trigger-theme" hidden>
+            <div id="theme-grid" class="theme-grid"></div>
+          </div>
+        </section>
+
+        <section class="accordion-item" data-accordion-id="layers">
+          <button type="button" class="accordion-trigger" aria-expanded="false" aria-controls="panel-layers" id="trigger-layers">
+            <span class="accordion-label">Layers</span>
+            <span class="accordion-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-panel" id="panel-layers" role="region" aria-labelledby="trigger-layers" hidden>
+            <div class="layer-list" id="layer-list"></div>
+          </div>
+        </section>
+
+        <section class="accordion-item" data-accordion-id="labels">
+          <button type="button" class="accordion-trigger" aria-expanded="false" aria-controls="panel-labels" id="trigger-labels">
+            <span class="accordion-label">Labels</span>
+            <span class="accordion-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-panel" id="panel-labels" role="region" aria-labelledby="trigger-labels" hidden>
+            <label class="field">
+              <span>Title</span>
+              <input type="text" id="label-city" maxlength="80">
+            </label>
+            <label class="field">
+              <span>Subtitle</span>
+              <input type="text" id="label-country" maxlength="80">
+            </label>
+            <label class="field">
+              <span>Font</span>
+              <select id="label-font">
+                <option value="Playfair Display">Playfair Display</option>
+                <option value="Montserrat">Montserrat</option>
+                <option value="Oswald">Oswald</option>
+                <option value="Raleway">Raleway</option>
+                <option value="Inter">Inter</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="accordion-item" data-accordion-id="format">
+          <button type="button" class="accordion-trigger" aria-expanded="false" aria-controls="panel-format" id="trigger-format">
+            <span class="accordion-label">Format</span>
+            <span class="accordion-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-panel" id="panel-format" role="region" aria-labelledby="trigger-format" hidden>
+            <select id="layout-select" class="layout-select"></select>
+          </div>
+        </section>
+      </nav>
+
+      <button type="button" id="export-png" class="btn-primary">Download PNG</button>
+
+      <p class="attribution">
+        Map data &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>
+        contributors. Tiles via <a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a>.
+        Map style inspired by <a href="https://github.com/yousifamanuel/terraink" target="_blank" rel="noopener">Terraink</a>.
+      </p>
+    </aside>
+
+    <main class="preview">
+      <div class="preview-toolbar">
+        <button type="button" id="zoom-out" class="icon-btn" title="Zoom out">−</button>
+        <button type="button" id="zoom-in" class="icon-btn" title="Zoom in">+</button>
+        <button type="button" id="map-lock" class="icon-btn" title="Lock map">Lock</button>
+      </div>
+      <div class="poster-shell">
+        <div class="poster-frame" id="poster-frame">
+          <div id="map" class="poster-map"></div>
+          <div class="poster-labels" id="poster-labels">
+            <h2 id="poster-city"></h2>
+            <p id="poster-country"></p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="mapStyle.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

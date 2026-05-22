@@ -1,0 +1,13 @@
+{
+  "name": "map-poster",
+  "version": "1.0.0",
+  "description": "Framed map poster app with MapLibre and OpenStreetMap data",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^4.21.2"
+  }
+}
