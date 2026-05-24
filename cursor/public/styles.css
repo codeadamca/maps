@@ -8,6 +8,10 @@
   --poster-bg: #f3e1da;
   --poster-text: #6e2f28;
   --poster-aspect: 21 / 29.7;
+  --compass-bg: #f3e1da;
+  --compass-ring: #6e2f28;
+  --compass-accent: #6b9fd8;
+  --compass-muted: #cda89b;
 }
 
 *,
@@ -372,6 +376,52 @@ select:focus {
 .poster-map {
   flex: 1;
   min-height: 0;
+}
+
+.poster-compass {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: clamp(54px, 10%, 84px);
+  aspect-ratio: 1;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.poster-compass[hidden] {
+  display: none;
+}
+
+.poster-compass-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.22));
+}
+
+.poster-compass-disc {
+  fill: var(--compass-bg);
+  fill-opacity: 0.92;
+}
+
+.poster-compass-ring {
+  fill: none;
+  stroke: var(--compass-ring);
+  stroke-width: 3;
+}
+
+.poster-compass-north {
+  fill: var(--compass-ring);
+}
+
+.poster-compass-south {
+  fill: var(--compass-accent);
+}
+
+.poster-compass-center {
+  fill: var(--compass-muted);
+  stroke: var(--compass-ring);
+  stroke-width: 2;
 }
 
 .poster-map .maplibregl-ctrl-bottom-left,

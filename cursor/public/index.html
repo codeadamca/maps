@@ -101,13 +101,25 @@
 
     <main class="preview">
       <div class="preview-toolbar">
+        <button type="button" id="rotate-left" class="icon-btn" title="Rotate left 15 degrees" aria-label="Rotate left 15 degrees">↺</button>
+        <button type="button" id="rotate-right" class="icon-btn" title="Rotate right 15 degrees" aria-label="Rotate right 15 degrees">↻</button>
         <button type="button" id="zoom-out" class="icon-btn" title="Zoom out">−</button>
         <button type="button" id="zoom-in" class="icon-btn" title="Zoom in">+</button>
-        <button type="button" id="map-lock" class="icon-btn" title="Lock map">Lock</button>
       </div>
       <div class="poster-shell">
         <div class="poster-frame" id="poster-frame">
           <div id="map" class="poster-map"></div>
+          <div class="poster-compass" id="poster-compass" aria-hidden="true">
+            <svg viewBox="0 0 100 100" class="poster-compass-svg" role="presentation">
+              <circle cx="50" cy="50" r="38" class="poster-compass-disc" />
+              <circle cx="50" cy="50" r="36" class="poster-compass-ring" />
+              <g class="poster-compass-rose" id="poster-compass-rose">
+                <path d="M50 16 L61 50 L50 42 L39 50 Z" class="poster-compass-north" />
+                <path d="M50 84 L61 50 L50 58 L39 50 Z" class="poster-compass-south" />
+                <circle cx="50" cy="50" r="4" class="poster-compass-center" />
+              </g>
+            </svg>
+          </div>
           <div class="poster-labels" id="poster-labels">
             <h2 id="poster-city"></h2>
             <p id="poster-country"></p>
