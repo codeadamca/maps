@@ -48,7 +48,7 @@ body {
   flex-direction: column;
   gap: 0;
   padding: 20px 16px 16px;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .sidebar-header h1 {
@@ -72,6 +72,7 @@ body {
   border-top: 1px solid var(--sidebar-border);
   flex: 1;
   min-height: 0;
+  overflow-y: auto;
 }
 
 .accordion-item {
@@ -274,7 +275,10 @@ select:focus {
 }
 
 .export-actions {
-  margin-top: auto;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--sidebar-border);
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;

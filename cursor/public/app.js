@@ -1,6 +1,8 @@
 const DEFAULT_CENTER = [-79.86622015711724, 45.64789087148891];
 const DEFAULT_ZOOM = 11;
 const VIEW_STATE_KEY = 'map-poster:view';
+const EXPORT_DPI = 96;
+const MAX_EXPORT_DIMENSION = 1600;
 
 const LAYER_OPTIONS = [
   { id: 'landcover', label: 'Land cover' },
@@ -44,6 +46,7 @@ const state = {
   fontFamily: 'Playfair Display',
   center: [...DEFAULT_CENTER],
   zoom: DEFAULT_ZOOM,
+  bearing: 0,
   layers: {
     landcover: true,
     parks: true,
@@ -89,9 +92,31 @@ function loadViewState() {
 
     const [lng, lat] = saved.center || [];
     const zoom = Number(saved.zoom);
+    const bearing = Number(saved.bearing);
     if (Number.isFinite(lng) && Number.isFinite(lat) && Number.isFinite(zoom)) {
       state.center = [lng, lat];
       state.zoom = zoom;
+    }
+
+    if (Number.isFinite(bearing)) {
+      state.bearing = bearing;
+    }
+
+    if (typeof saved.themeId === 'string') state.themeId = saved.themeId;
+    if (typeof saved.layoutId === 'string') state.layoutId = saved.layoutId;
+    if (saved.orientation === 'portrait' || saved.orientation === 'landscape') {
+      state.orientation = saved.orientation;
+    }
+    if (typeof saved.city === 'string') state.city = saved.city;
+    if (typeof saved.country === 'string') state.country = saved.country;
+    if (typeof saved.fontFamily === 'string') state.fontFamily = saved.fontFamily;
+
+    if (saved.layers && typeof saved.layers === 'object') {
+      for (const option of LAYER_OPTIONS) {
+        if (typeof saved.layers[option.id] === 'boolean') {
+          state.layers[option.id] = saved.layers[option.id];
+        }
+      }
     }
   } catch (error) {
     // Ignore invalid storage.
@@ -99,11 +124,18 @@ function loadViewState() {
 }
 
 function saveViewState() {
-  if (!map) return;
-  const center = map.getCenter();
+  const center = map ? map.getCenter() : { lng: state.center[0], lat: state.center[1] };
   localStorage.setItem(VIEW_STATE_KEY, JSON.stringify({
     center: [center.lng, center.lat],
-    zoom: map.getZoom()
+    zoom: map ? map.getZoom() : state.zoom,
+    bearing: map ? map.getBearing() : state.bearing,
+    themeId: state.themeId,
+    layoutId: state.layoutId,
+    orientation: state.orientation,
+    city: state.city,
+    country: state.country,
+    fontFamily: state.fontFamily,
+    layers: state.layers
   }));
 }
 
@@ -142,12 +174,45 @@ function getLayoutDimensions() {
 function getExportDimensions() {
   const layout = getLayoutDimensions();
   if (layout.unit === 'px') {
-    return { width: layout.width, height: layout.height };
+    const largestDimension = Math.max(layout.width, layout.height);
+    if (largestDimension <= MAX_EXPORT_DIMENSION) {
+      return { width: layout.width, height: layout.height };
+    }
+
+    const scale = MAX_EXPORT_DIMENSION / largestDimension;
+    return {
+      width: Math.round(layout.width * scale),
+      height: Math.round(layout.height * scale)
+    };
   }
-  const dpi = 300;
-  const width = Math.round((layout.width / 2.54) * dpi);
-  const height = Math.round((layout.height / 2.54) * dpi);
+  const rawWidth = Math.round((layout.width / 2.54) * EXPORT_DPI);
+  const rawHeight = Math.round((layout.height / 2.54) * EXPORT_DPI);
+  const largestDimension = Math.max(rawWidth, rawHeight);
+
+  if (largestDimension <= MAX_EXPORT_DIMENSION) {
+    return { width: rawWidth, height: rawHeight };
+  }
+
+  const scale = MAX_EXPORT_DIMENSION / largestDimension;
+  const width = Math.round(rawWidth * scale);
+  const height = Math.round(rawHeight * scale);
   return { width, height };
+}
+
+function getSvgDocumentSize() {
+  const layout = getLayoutDimensions();
+
+  if (layout.unit === 'px') {
+    return {
+      width: `${layout.width}px`,
+      height: `${layout.height}px`
+    };
+  }
+
+  return {
+    width: `${layout.width}cm`,
+    height: `${layout.height}cm`
+  };
 }
 
 function buildMapStyle() {
@@ -393,6 +458,7 @@ function initMap() {
     style: buildMapStyle(),
     center: state.center,
     zoom: state.zoom,
+    bearing: state.bearing,
     attributionControl: false,
     preserveDrawingBuffer: true,
     dragRotate: false,
@@ -403,10 +469,15 @@ function initMap() {
     const center = map.getCenter();
     state.center = [center.lng, center.lat];
     state.zoom = map.getZoom();
+    state.bearing = map.getBearing();
     saveViewState();
   });
 
   map.on('rotate', applyCompassRotation);
+  map.on('rotateend', () => {
+    state.bearing = map.getBearing();
+    saveViewState();
+  });
 
   map.once('load', applyLayerVisibility);
 
@@ -444,6 +515,7 @@ function renderThemeGrid() {
       applyThemeUi();
       renderThemeGrid();
       reloadMapStyle();
+      saveViewState();
     });
 
     themeGrid.append(button);
@@ -463,6 +535,7 @@ function renderLayerList() {
     input.addEventListener('change', () => {
       state.layers[option.id] = input.checked;
       applyLayerOption(option.id);
+      saveViewState();
     });
 
     const text = document.createElement('span');
@@ -583,26 +656,31 @@ document.addEventListener('click', (event) => {
 labelCity.addEventListener('input', () => {
   state.city = labelCity.value;
   posterCity.textContent = state.city;
+  saveViewState();
 });
 
 labelCountry.addEventListener('input', () => {
   state.country = labelCountry.value;
   posterCountry.textContent = state.country;
+  saveViewState();
 });
 
 labelFont.addEventListener('change', () => {
   state.fontFamily = labelFont.value;
   applyThemeUi();
+  saveViewState();
 });
 
 layoutSelect.addEventListener('change', () => {
   state.layoutId = layoutSelect.value;
   updatePosterLayout();
+  saveViewState();
 });
 
 orientationSelect.addEventListener('change', () => {
   state.orientation = orientationSelect.value;
   updatePosterLayout();
+  saveViewState();
 });
 
 document.getElementById('zoom-in').addEventListener('click', () => map.zoomIn({ duration: 300 }));
@@ -610,18 +688,39 @@ document.getElementById('zoom-out').addEventListener('click', () => map.zoomOut(
 rotateLeftButton.addEventListener('click', () => rotateMapBy(-ROTATION_STEP));
 rotateRightButton.addEventListener('click', () => rotateMapBy(ROTATION_STEP));
 
+function waitForNextFrame() {
+  return new Promise(resolve => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(resolve);
+    });
+  });
+}
+
+async function waitForMapReadyForExport() {
+  if (!map) return;
+
+  if (!map.loaded()) {
+    await new Promise(resolve => {
+      map.once('load', resolve);
+    });
+  }
+
+  if (map.isMoving()) {
+    await new Promise(resolve => {
+      map.once('moveend', resolve);
+    });
+  }
+
+  map.triggerRepaint();
+  await waitForNextFrame();
+}
+
 async function exportPng() {
   exportButton.disabled = true;
   exportButton.textContent = 'Exporting…';
 
   try {
-    await new Promise(resolve => {
-      if (map.loaded()) {
-        map.once('idle', resolve);
-      } else {
-        map.once('load', resolve);
-      }
-    });
+    await waitForMapReadyForExport();
 
     const theme = getTheme();
     const { width, height, labelBand, mapHeight, titleSize, subtitleSize } = getPosterMetrics();
@@ -656,12 +755,7 @@ async function exportPng() {
       }, 'image/png');
     });
 
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${slugify(state.city || 'map')}-poster.png`;
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `${slugify(state.city || 'map')}-poster.png`);
   } finally {
     exportButton.disabled = false;
     exportButton.textContent = 'Download PNG';
@@ -682,8 +776,14 @@ function downloadBlob(blob, filename) {
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
+  link.style.display = 'none';
+  document.body.append(link);
   link.click();
-  URL.revokeObjectURL(url);
+
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+    link.remove();
+  }, 1000);
 }
 
 async function exportSvg() {
@@ -691,23 +791,18 @@ async function exportSvg() {
   exportSvgButton.textContent = 'Exporting…';
 
   try {
-    await new Promise(resolve => {
-      if (map.loaded()) {
-        map.once('idle', resolve);
-      } else {
-        map.once('load', resolve);
-      }
-    });
+    await waitForMapReadyForExport();
 
     const theme = getTheme();
     const { width, height, labelBand, mapHeight, titleSize, subtitleSize, titleY, subtitleY } = getPosterMetrics();
+    const svgSize = getSvgDocumentSize();
     const mapDataUrl = map.getCanvas().toDataURL('image/png');
 
     const svg = [
       '<?xml version="1.0" encoding="UTF-8"?>',
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
+      `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${svgSize.width}" height="${svgSize.height}" viewBox="0 0 ${width} ${height}">`,
       `  <rect width="${width}" height="${height}" fill="${escapeXml(theme.ui.bg)}" />`,
-      `  <image href="${mapDataUrl}" x="0" y="0" width="${width}" height="${mapHeight}" preserveAspectRatio="none" />`,
+      `  <image href="${mapDataUrl}" xlink:href="${mapDataUrl}" x="0" y="0" width="${width}" height="${mapHeight}" preserveAspectRatio="none" />`,
       buildCompassSvg(theme, width, mapHeight),
       `  <rect x="0" y="${mapHeight}" width="${width}" height="${labelBand}" fill="${escapeXml(theme.ui.bg)}" />`,
       `  <text x="${Math.round(width / 2)}" y="${titleY}" text-anchor="middle" fill="${escapeXml(theme.ui.text)}" font-family="${escapeXml(state.fontFamily)}, sans-serif" font-size="${titleSize}" font-weight="700">${escapeXml(state.city)}</text>`,
@@ -779,6 +874,14 @@ async function boot() {
     state.themeId = Object.keys(themesData.themes)[0];
   }
 
+  const hasLayout = (layoutsData.categories || []).some(category => (
+    (category.layouts || []).some(layout => layout.id === state.layoutId)
+  ));
+
+  if (!hasLayout) {
+    state.layoutId = layoutsData.defaultLayoutId || 'poster_18x24_portrait';
+  }
+
   labelFont.value = state.fontFamily;
   applyThemeUi();
   updatePosterLayout();
@@ -789,6 +892,7 @@ async function boot() {
   renderLayoutSelect();
   initAccordion();
   initMap();
+  saveViewState();
 }
 
 window.addEventListener('resize', () => {
