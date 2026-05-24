@@ -78,18 +78,25 @@
             <span class="accordion-chevron" aria-hidden="true"></span>
           </button>
           <div class="accordion-panel" id="panel-format" role="region" aria-labelledby="trigger-format" hidden>
-            <select id="layout-select" class="layout-select"></select>
+            <label class="field">
+              <span>Size</span>
+              <select id="layout-select" class="layout-select"></select>
+            </label>
+            <label class="field">
+              <span>Orientation</span>
+              <select id="orientation-select" class="layout-select">
+                <option value="portrait">Portrait</option>
+                <option value="landscape">Landscape</option>
+              </select>
+            </label>
           </div>
         </section>
       </nav>
 
-      <button type="button" id="export-png" class="btn-primary">Download PNG</button>
-
-      <p class="attribution">
-        Map data &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>
-        contributors. Tiles via <a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a>.
-        Map style inspired by <a href="https://github.com/yousifamanuel/terraink" target="_blank" rel="noopener">Terraink</a>.
-      </p>
+      <div class="export-actions">
+        <button type="button" id="export-png" class="btn-primary">Download PNG</button>
+        <button type="button" id="export-svg" class="btn-secondary">Download SVG</button>
+      </div>
     </aside>
 
     <main class="preview">

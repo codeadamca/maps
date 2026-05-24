@@ -36,7 +36,8 @@ const LAYER_IDS_BY_OPTION = {
 
 const state = {
   themeId: 'coral',
-  layoutId: 'print_a4_portrait',
+  layoutId: 'poster_18x24_portrait',
+  orientation: 'portrait',
   city: 'Whitestone Lake',
   country: 'Ontario, Canada',
   fontFamily: 'Playfair Display',
@@ -61,6 +62,7 @@ let searchAbort = null;
 const themeGrid = document.getElementById('theme-grid');
 const layerList = document.getElementById('layer-list');
 const layoutSelect = document.getElementById('layout-select');
+const orientationSelect = document.getElementById('orientation-select');
 const locationSearch = document.getElementById('location-search');
 const searchResults = document.getElementById('search-results');
 const labelCity = document.getElementById('label-city');
@@ -71,6 +73,7 @@ const posterCity = document.getElementById('poster-city');
 const posterCountry = document.getElementById('poster-country');
 const posterLabels = document.getElementById('poster-labels');
 const exportButton = document.getElementById('export-png');
+const exportSvgButton = document.getElementById('export-svg');
 const mapLockButton = document.getElementById('map-lock');
 
 function loadViewState() {
@@ -110,8 +113,28 @@ function getLayout() {
   return { width: 21, height: 29.7, unit: 'cm' };
 }
 
-function getExportDimensions() {
+function getLayoutDimensions() {
   const layout = getLayout();
+  const longSide = Math.max(layout.width, layout.height);
+  const shortSide = Math.min(layout.width, layout.height);
+
+  if (state.orientation === 'landscape') {
+    return {
+      ...layout,
+      width: longSide,
+      height: shortSide
+    };
+  }
+
+  return {
+    ...layout,
+    width: shortSide,
+    height: longSide
+  };
+}
+
+function getExportDimensions() {
+  const layout = getLayoutDimensions();
   if (layout.unit === 'px') {
     return { width: layout.width, height: layout.height };
   }
@@ -145,8 +168,15 @@ function applyThemeUi() {
 }
 
 function applyPosterAspect() {
-  const layout = getLayout();
+  const layout = getLayoutDimensions();
   posterFrame.style.setProperty('--poster-aspect', `${layout.width} / ${layout.height}`);
+}
+
+function updatePosterLayout() {
+  applyPosterAspect();
+  if (map) {
+    requestAnimationFrame(() => map.resize());
+  }
 }
 
 function applyLabels() {
@@ -308,6 +338,7 @@ function renderLayoutSelect() {
   });
 
   layoutSelect.value = state.layoutId;
+  orientationSelect.value = state.orientation;
 }
 
 function hideSearchResults() {
@@ -413,7 +444,12 @@ labelFont.addEventListener('change', () => {
 
 layoutSelect.addEventListener('change', () => {
   state.layoutId = layoutSelect.value;
-  applyPosterAspect();
+  updatePosterLayout();
+});
+
+orientationSelect.addEventListener('change', () => {
+  state.orientation = orientationSelect.value;
+  updatePosterLayout();
 });
 
 document.getElementById('zoom-in').addEventListener('click', () => map.zoomIn({ duration: 300 }));
@@ -483,6 +519,66 @@ async function exportPng() {
   }
 }
 
+function escapeXml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+async function exportSvg() {
+  exportSvgButton.disabled = true;
+  exportSvgButton.textContent = 'Exporting…';
+
+  try {
+    await new Promise(resolve => {
+      if (map.loaded()) {
+        map.once('idle', resolve);
+      } else {
+        map.once('load', resolve);
+      }
+    });
+
+    const theme = getTheme();
+    const { width, height } = getExportDimensions();
+    const labelBand = Math.round(height * 0.14);
+    const mapHeight = height - labelBand;
+    const titleSize = Math.round(width * 0.055);
+    const subtitleSize = Math.round(width * 0.028);
+    const titleY = Math.round(mapHeight + labelBand * 0.52);
+    const subtitleY = Math.round(mapHeight + labelBand * 0.82);
+    const mapDataUrl = map.getCanvas().toDataURL('image/png');
+
+    const svg = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
+      `  <rect width="${width}" height="${height}" fill="${escapeXml(theme.ui.bg)}" />`,
+      `  <image href="${mapDataUrl}" x="0" y="0" width="${width}" height="${mapHeight}" preserveAspectRatio="none" />`,
+      `  <rect x="0" y="${mapHeight}" width="${width}" height="${labelBand}" fill="${escapeXml(theme.ui.bg)}" />`,
+      `  <text x="${Math.round(width / 2)}" y="${titleY}" text-anchor="middle" fill="${escapeXml(theme.ui.text)}" font-family="${escapeXml(state.fontFamily)}, sans-serif" font-size="${titleSize}" font-weight="700">${escapeXml(state.city)}</text>`,
+      `  <text x="${Math.round(width / 2)}" y="${subtitleY}" text-anchor="middle" fill="${escapeXml(theme.ui.text)}" fill-opacity="0.85" font-family="${escapeXml(state.fontFamily)}, sans-serif" font-size="${subtitleSize}" font-weight="500" letter-spacing="0.04em">${escapeXml(state.country)}</text>`,
+      '</svg>'
+    ].join('\n');
+
+    const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+    downloadBlob(blob, `${slugify(state.city || 'map')}-poster.svg`);
+  } finally {
+    exportSvgButton.disabled = false;
+    exportSvgButton.textContent = 'Download SVG';
+  }
+}
+
 function slugify(value) {
   return String(value)
     .toLowerCase()
@@ -491,6 +587,7 @@ function slugify(value) {
 }
 
 exportButton.addEventListener('click', exportPng);
+exportSvgButton.addEventListener('click', exportSvg);
 
 function initAccordion() {
   const accordion = document.getElementById('sidebar-accordion');
@@ -540,7 +637,7 @@ async function boot() {
 
   labelFont.value = state.fontFamily;
   applyThemeUi();
-  applyPosterAspect();
+  updatePosterLayout();
   applyLabels();
   renderThemeGrid();
   renderLayerList();
