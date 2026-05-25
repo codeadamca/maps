@@ -497,23 +497,6 @@ function generateMapStyle(theme, options = {}) {
       },
 
       {
-        id: "road-major-casing",
-        source: SOURCE_ID,
-        "source-layer": "transportation",
-        type: "line",
-        filter: lineClassFilter(MAP_ROAD_MAJOR_CLASSES),
-        paint: {
-          "line-color": roadOutlineColor,
-          "line-width": widthExpr(roadMajorCasingStops),
-          "line-opacity": includeRoadOutline ? 0.95 : 0,
-        },
-        layout: {
-          visibility: includeRoads ? ("visible" ) : ("none" ),
-          "line-cap": "round" ,
-          "line-join": "round" ,
-        },
-      },
-      {
         id: "road-minor-high-casing",
         source: SOURCE_ID,
         "source-layer": "transportation",
@@ -585,16 +568,16 @@ function generateMapStyle(theme, options = {}) {
           "line-join": "round" ,
         },
       },
-
       {
-        id: "road-major",
+        id: "road-major-casing",
         source: SOURCE_ID,
         "source-layer": "transportation",
         type: "line",
         filter: lineClassFilter(MAP_ROAD_MAJOR_CLASSES),
         paint: {
-          "line-color": theme.map.roads.major,
-          "line-width": widthExpr(roadMajorWidthStops),
+          "line-color": roadOutlineColor,
+          "line-width": widthExpr(roadMajorCasingStops),
+          "line-opacity": includeRoadOutline ? 0.95 : 0,
         },
         layout: {
           visibility: includeRoads ? ("visible" ) : ("none" ),
@@ -602,6 +585,7 @@ function generateMapStyle(theme, options = {}) {
           "line-join": "round" ,
         },
       },
+
       {
         id: "road-minor-high",
         source: SOURCE_ID,
@@ -687,6 +671,22 @@ function generateMapStyle(theme, options = {}) {
                 [18, 0.95],
               ])
             : 0,
+        },
+        layout: {
+          visibility: includeRoads ? ("visible" ) : ("none" ),
+          "line-cap": "round" ,
+          "line-join": "round" ,
+        },
+      },
+      {
+        id: "road-major",
+        source: SOURCE_ID,
+        "source-layer": "transportation",
+        type: "line",
+        filter: lineClassFilter(MAP_ROAD_MAJOR_CLASSES),
+        paint: {
+          "line-color": theme.map.roads.major,
+          "line-width": widthExpr(roadMajorWidthStops),
         },
         layout: {
           visibility: includeRoads ? ("visible" ) : ("none" ),
