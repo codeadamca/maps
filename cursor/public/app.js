@@ -4,6 +4,29 @@ const MAPBOX_BUILDING_FOCUS_ZOOM = 16;
 const VIEW_STATE_KEY = 'map-poster:view';
 const EXPORT_DPI = 96;
 const MAX_EXPORT_DIMENSION = 1600;
+const EXPORT_TEXT_SCALE_ADJUSTMENT = 1.08;
+const SVG_FONT_CONFIG = {
+  'Playfair Display': {
+    family: 'Playfair Display',
+    weights: [600, 700],
+    url: 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/playfairdisplay/PlayfairDisplay%5Bwght%5D.ttf'
+  },
+  Inter: {
+    family: 'Inter',
+    weights: [500, 700],
+    url: 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/inter/Inter%5Bopsz,wght%5D.ttf'
+  },
+  'Roboto Condensed': {
+    family: 'Roboto Condensed',
+    weights: [400, 500, 700],
+    url: 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/robotocondensed/RobotoCondensed%5Bwght%5D.ttf'
+  },
+  'Cormorant Garamond': {
+    family: 'Cormorant Garamond',
+    weights: [500, 600, 700],
+    url: 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/cormorantgaramond/CormorantGaramond%5Bwght%5D.ttf'
+  }
+};
 
 const LAYER_OPTIONS = [
   { id: 'landcover', label: 'Land cover' },
@@ -63,6 +86,8 @@ let themesData = { themes: {} };
 let layoutsData = { categories: [] };
 let map = null;
 let searchAbort = null;
+const svgFontFaceCache = new Map();
+const svgFontDataCache = new Map();
 let appConfig = {
   tileProvider: 'openfreemap',
   mapboxToken: '',
@@ -267,8 +292,28 @@ function getPosterMetrics() {
   const { width, height } = getExportDimensions();
   const labelBand = Math.round(height * 0.14);
   const mapHeight = height - labelBand;
-  const titleSize = Math.round(width * 0.055);
-  const subtitleSize = Math.round(width * 0.028);
+  const posterFrameRect = posterFrame ? posterFrame.getBoundingClientRect() : null;
+  const renderedPosterWidth = posterFrameRect ? posterFrameRect.width : 0;
+  const renderedPosterHeight = posterFrameRect ? posterFrameRect.height : 0;
+  const exportScaleX = renderedPosterWidth > 0 ? width / renderedPosterWidth : 1;
+  const exportScaleY = renderedPosterHeight > 0 ? height / renderedPosterHeight : exportScaleX;
+  const exportScale = Math.max(exportScaleX, exportScaleY);
+  const previewTitleSize = posterCity ? parseFloat(getComputedStyle(posterCity).fontSize) : NaN;
+  const previewSubtitleSize = posterCountry ? parseFloat(getComputedStyle(posterCountry).fontSize) : NaN;
+  const posterCityRect = posterCity ? posterCity.getBoundingClientRect() : null;
+  const posterCountryRect = posterCountry ? posterCountry.getBoundingClientRect() : null;
+  const titleSize = Number.isFinite(previewTitleSize)
+    ? Math.round(previewTitleSize * exportScale * EXPORT_TEXT_SCALE_ADJUSTMENT)
+    : Math.round(width * 0.055);
+  const subtitleSize = Number.isFinite(previewSubtitleSize)
+    ? Math.round(previewSubtitleSize * exportScale * EXPORT_TEXT_SCALE_ADJUSTMENT)
+    : Math.round(width * 0.028);
+  const titleY = posterFrameRect && posterCityRect
+    ? Math.round((posterCityRect.top - posterFrameRect.top + posterCityRect.height / 2) * exportScale)
+    : Math.round(mapHeight + labelBand * 0.52);
+  const subtitleY = posterFrameRect && posterCountryRect
+    ? Math.round((posterCountryRect.top - posterFrameRect.top + posterCountryRect.height / 2) * exportScale)
+    : Math.round(mapHeight + labelBand * 0.82);
 
   return {
     width,
@@ -277,8 +322,8 @@ function getPosterMetrics() {
     mapHeight,
     titleSize,
     subtitleSize,
-    titleY: Math.round(mapHeight + labelBand * 0.52),
-    subtitleY: Math.round(mapHeight + labelBand * 0.82)
+    titleY,
+    subtitleY
   };
 }
 
@@ -749,7 +794,7 @@ async function exportPng() {
     await waitForMapReadyForExport();
 
     const theme = getTheme();
-    const { width, height, labelBand, mapHeight, titleSize, subtitleSize } = getPosterMetrics();
+    const { width, height, labelBand, mapHeight, titleSize, subtitleSize, titleY, subtitleY } = getPosterMetrics();
 
     const canvas = document.createElement('canvas');
     canvas.width = width;
@@ -769,10 +814,11 @@ async function exportPng() {
 
     ctx.fillStyle = theme.ui.text;
     ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
     ctx.font = `700 ${titleSize}px "${state.fontFamily}", sans-serif`;
-    ctx.fillText(state.city, width / 2, mapHeight + labelBand * 0.52);
+    ctx.fillText(state.city, width / 2, titleY);
     ctx.font = `500 ${subtitleSize}px "${state.fontFamily}", sans-serif`;
-    ctx.fillText(state.country, width / 2, mapHeight + labelBand * 0.82);
+    ctx.fillText(state.country, width / 2, subtitleY);
 
     const blob = await new Promise((resolve, reject) => {
       canvas.toBlob(result => {
@@ -795,6 +841,82 @@ function escapeXml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
+}
+
+function getSvgFontConfig(fontFamily) {
+  return SVG_FONT_CONFIG[fontFamily] || SVG_FONT_CONFIG.Inter;
+}
+
+function pickClosestFontWeight(weights, targetWeight) {
+  return weights.reduce((closest, current) => {
+    if (closest === null) return current;
+    return Math.abs(current - targetWeight) < Math.abs(closest - targetWeight)
+      ? current
+      : closest;
+  }, null);
+}
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') resolve(reader.result);
+      else reject(new Error('Failed to read font data'));
+    };
+    reader.onerror = () => reject(reader.error || new Error('Failed to read font data'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function fetchEmbeddedFontFace(fontFamily, weight) {
+  const config = getSvgFontConfig(fontFamily);
+  const cacheKey = `${config.family}:${weight}`;
+  if (svgFontFaceCache.has(cacheKey)) {
+    return svgFontFaceCache.get(cacheKey);
+  }
+
+  let dataUrl = svgFontDataCache.get(config.url);
+
+  if (!dataUrl) {
+    const fontResponse = await fetch(config.url);
+    if (!fontResponse.ok) {
+      throw new Error(`Failed to download font file for ${config.family}`);
+    }
+
+    dataUrl = await blobToDataUrl(await fontResponse.blob());
+    svgFontDataCache.set(config.url, dataUrl);
+  }
+
+  const fontFace = [
+    '@font-face {',
+    `  font-family: '${config.family}';`,
+    '  font-style: normal;',
+    `  font-weight: ${weight};`,
+    `  src: url('${dataUrl}') format('truetype');`,
+    '}'
+  ].join('\n');
+
+  svgFontFaceCache.set(cacheKey, fontFace);
+  return fontFace;
+}
+
+async function buildSvgFontStyle(fontFamily) {
+  const config = getSvgFontConfig(fontFamily);
+  const requestedWeights = [...new Set([
+    700,
+    pickClosestFontWeight(config.weights, 500)
+  ])];
+  const fontFaces = await Promise.all(
+    requestedWeights.map(weight => fetchEmbeddedFontFace(config.family, weight))
+  );
+
+  return [
+    '  <defs>',
+    '    <style type="text/css"><![CDATA[',
+    fontFaces.join('\n'),
+    '    ]]></style>',
+    '  </defs>'
+  ].join('\n');
 }
 
 function downloadBlob(blob, filename) {
@@ -823,18 +945,28 @@ async function exportSvg() {
     const { width, height, labelBand, mapHeight, titleSize, subtitleSize, titleY, subtitleY } = getPosterMetrics();
     const svgSize = getSvgDocumentSize();
     const mapDataUrl = map.getCanvas().toDataURL('image/png');
+    const fontConfig = getSvgFontConfig(state.fontFamily);
+    const subtitleFontWeight = pickClosestFontWeight(fontConfig.weights, 500);
+    let embeddedFontStyle = '';
+
+    try {
+      embeddedFontStyle = await buildSvgFontStyle(fontConfig.family);
+    } catch (error) {
+      console.warn('Failed to embed SVG font, falling back to installed fonts.', error);
+    }
 
     const svg = [
       '<?xml version="1.0" encoding="UTF-8"?>',
       `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${svgSize.width}" height="${svgSize.height}" viewBox="0 0 ${width} ${height}">`,
+      embeddedFontStyle,
       `  <rect width="${width}" height="${height}" fill="${escapeXml(theme.ui.bg)}" />`,
       `  <image href="${mapDataUrl}" xlink:href="${mapDataUrl}" x="0" y="0" width="${width}" height="${mapHeight}" preserveAspectRatio="none" />`,
       buildCompassSvg(theme, width, mapHeight),
       `  <rect x="0" y="${mapHeight}" width="${width}" height="${labelBand}" fill="${escapeXml(theme.ui.bg)}" />`,
-      `  <text x="${Math.round(width / 2)}" y="${titleY}" text-anchor="middle" fill="${escapeXml(theme.ui.text)}" font-family="${escapeXml(state.fontFamily)}, sans-serif" font-size="${titleSize}" font-weight="700">${escapeXml(state.city)}</text>`,
-      `  <text x="${Math.round(width / 2)}" y="${subtitleY}" text-anchor="middle" fill="${escapeXml(theme.ui.text)}" fill-opacity="0.85" font-family="${escapeXml(state.fontFamily)}, sans-serif" font-size="${subtitleSize}" font-weight="500" letter-spacing="0.04em">${escapeXml(state.country)}</text>`,
+      `  <text x="${Math.round(width / 2)}" y="${titleY}" text-anchor="middle" dominant-baseline="middle" fill="${escapeXml(theme.ui.text)}" font-family="${escapeXml(fontConfig.family)}, sans-serif" font-size="${titleSize}" font-weight="700">${escapeXml(state.city)}</text>`,
+      `  <text x="${Math.round(width / 2)}" y="${subtitleY}" text-anchor="middle" dominant-baseline="middle" fill="${escapeXml(theme.ui.text)}" fill-opacity="0.85" font-family="${escapeXml(fontConfig.family)}, sans-serif" font-size="${subtitleSize}" font-weight="${subtitleFontWeight}" letter-spacing="0.04em">${escapeXml(state.country)}</text>`,
       '</svg>'
-    ].join('\n');
+    ].filter(Boolean).join('\n');
 
     const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
     downloadBlob(blob, `${slugify(state.city || 'map')}-poster.svg`);
