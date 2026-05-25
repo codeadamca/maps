@@ -6,13 +6,15 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
 const MAPBOX_TOKEN = String(process.env.MAPBOX_TOKEN || '').trim();
+const DEBUG = /^true$/i.test(String(process.env.DEBUG || '').trim());
 
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/api/config', (_req, res) => {
   res.json({
     tileProvider: MAPBOX_TOKEN ? 'mapbox' : 'openfreemap',
-    mapboxToken: MAPBOX_TOKEN
+    mapboxToken: MAPBOX_TOKEN,
+    debug: DEBUG
   });
 });
 

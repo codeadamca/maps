@@ -1,6 +1,6 @@
 const DEFAULT_CENTER = [-79.86622015711724, 45.64789087148891];
 const DEFAULT_ZOOM = 11;
-const MAPBOX_BUILDING_FOCUS_ZOOM = 15;
+const MAPBOX_BUILDING_FOCUS_ZOOM = 16;
 const VIEW_STATE_KEY = 'map-poster:view';
 const EXPORT_DPI = 96;
 const MAX_EXPORT_DIMENSION = 1600;
@@ -65,7 +65,8 @@ let map = null;
 let searchAbort = null;
 let appConfig = {
   tileProvider: 'openfreemap',
-  mapboxToken: ''
+  mapboxToken: '',
+  debug: false
 };
 
 const themeGrid = document.getElementById('theme-grid');
@@ -80,6 +81,7 @@ const labelFont = document.getElementById('label-font');
 const posterFrame = document.getElementById('poster-frame');
 const posterCompass = document.getElementById('poster-compass');
 const posterCompassRose = document.getElementById('poster-compass-rose');
+const posterDebug = document.getElementById('poster-debug');
 const posterCity = document.getElementById('poster-city');
 const posterCountry = document.getElementById('poster-country');
 const posterLabels = document.getElementById('poster-labels');
@@ -400,6 +402,17 @@ function applyLabels() {
   labelCountry.value = state.country;
 }
 
+function formatZoomValue(zoom) {
+  return Number.isFinite(zoom) ? zoom.toFixed(2) : '0.00';
+}
+
+function applyDebugOverlay() {
+  if (!posterDebug) return;
+  posterDebug.hidden = !appConfig.debug;
+  if (!appConfig.debug) return;
+  posterDebug.textContent = `Zoom: ${formatZoomValue(state.zoom)}`;
+}
+
 function rotateMapBy(delta) {
   if (!map) return;
 
@@ -477,6 +490,7 @@ function initMap() {
     state.center = [center.lng, center.lat];
     state.zoom = map.getZoom();
     state.bearing = map.getBearing();
+    applyDebugOverlay();
     saveViewState();
   });
 
@@ -495,6 +509,7 @@ function initMap() {
   requestAnimationFrame(() => {
     map.resize();
     applyCompassRotation();
+    applyDebugOverlay();
   });
 }
 
@@ -899,6 +914,7 @@ async function boot() {
   applyThemeUi();
   updatePosterLayout();
   applyLabels();
+  applyDebugOverlay();
   applyCompassVisibility();
   renderThemeGrid();
   renderLayerList();

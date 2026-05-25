@@ -35,11 +35,6 @@ const SOURCE_MAX_ZOOM = 14;
 
 const BUILDING_BLEND_FACTOR = 0.14;
 const BUILDING_FILL_OPACITY = 0.84;
-const OPENFREEMAP_BUILDING_MIN_ZOOM_DEFAULT = 6.8;
-const OPENFREEMAP_BUILDING_MIN_ZOOM_PRESERVE = 7;
-const MAPBOX_BUILDING_MIN_ZOOM_DEFAULT = 2.8;
-const MAPBOX_BUILDING_MIN_ZOOM_PRESERVE = 3.2;
-const DETAIL_PRESERVE_DISTANCE_METERS = 30_000;
 
 const MAP_WATERWAY_WIDTH_STOPS = [
   [0, 0.2],
@@ -200,23 +195,6 @@ const MAP_OVERZOOM_SCALE = 5.5;
  */
 const OVERZOOM_LINE_WIDTH_SCALE = Math.pow(MAP_OVERZOOM_SCALE, 0.8);
 
-function resolveBuildingMinZoom(distanceMeters, providerName) {
-  const defaultMinZoom = providerName === "mapbox"
-    ? MAPBOX_BUILDING_MIN_ZOOM_DEFAULT
-    : OPENFREEMAP_BUILDING_MIN_ZOOM_DEFAULT;
-  const preserveMinZoom = providerName === "mapbox"
-    ? MAPBOX_BUILDING_MIN_ZOOM_PRESERVE
-    : OPENFREEMAP_BUILDING_MIN_ZOOM_PRESERVE;
-
-  if (
-    Number.isFinite(distanceMeters) &&
-    Number(distanceMeters) <= DETAIL_PRESERVE_DISTANCE_METERS
-  ) {
-    return preserveMinZoom;
-  }
-  return defaultMinZoom;
-}
-
 function widthExpr(stops) {
   const flat = stops.flatMap(([zoom, width]) => [zoom, width]);
   return ["interpolate", ["linear"], ["zoom"], ...flat];
@@ -344,10 +322,6 @@ function generateMapStyle(theme, options = {}) {
   const roadMinorMidClasses = provider.roadClasses.minorMid;
   const roadMinorLowClasses = provider.roadClasses.minorLow;
   const roadPathClasses = provider.roadClasses.path;
-  const buildingMinZoom = resolveBuildingMinZoom(
-    options.distanceMeters,
-    options.provider,
-  );
 
   const minorHighCasingStops = scaledStops(
     MAP_ROAD_MINOR_HIGH_DETAIL_WIDTH_STOPS,
@@ -805,7 +779,6 @@ function generateMapStyle(theme, options = {}) {
         source: provider.sourceId,
         "source-layer": provider.layers.building,
         type: "fill" ,
-        minzoom: buildingMinZoom,
         layout: { visibility: includeBuildings ? ("visible" ) : ("none" ) },
         paint: {
           "fill-color": buildingFill,

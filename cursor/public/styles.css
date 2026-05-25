@@ -428,6 +428,22 @@ select:focus {
   stroke-width: 2;
 }
 
+.poster-debug {
+  position: absolute;
+  right: 18px;
+  bottom: 74px;
+  z-index: 2;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--poster-text);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
 .poster-map .maplibregl-ctrl-bottom-left,
 .poster-map .maplibregl-ctrl-bottom-right,
 .poster-map .maplibregl-ctrl-top-right {
