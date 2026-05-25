@@ -1,5 +1,6 @@
 const DEFAULT_CENTER = [-79.86622015711724, 45.64789087148891];
 const DEFAULT_ZOOM = 11;
+const MAPBOX_BUILDING_FOCUS_ZOOM = 15;
 const VIEW_STATE_KEY = 'map-poster:view';
 const EXPORT_DPI = 96;
 const MAX_EXPORT_DIMENSION = 1600;
@@ -62,6 +63,10 @@ let themesData = { themes: {} };
 let layoutsData = { categories: [] };
 let map = null;
 let searchAbort = null;
+let appConfig = {
+  tileProvider: 'openfreemap',
+  mapboxToken: ''
+};
 
 const themeGrid = document.getElementById('theme-grid');
 const layerList = document.getElementById('layer-list');
@@ -218,6 +223,8 @@ function getSvgDocumentSize() {
 function buildMapStyle() {
   const theme = getTheme();
   return generateMapStyle(theme, {
+    provider: appConfig.tileProvider,
+    mapboxToken: appConfig.mapboxToken,
     includeLandcover: state.layers.landcover,
     includeParks: state.layers.parks,
     includeWater: state.layers.water,
@@ -603,9 +610,13 @@ function flyToLocation(result) {
   state.country = result.country || state.country;
   applyLabels();
 
+  const targetZoom = appConfig.tileProvider === 'mapbox' && state.layers.buildings
+    ? MAPBOX_BUILDING_FOCUS_ZOOM
+    : 10;
+
   map.flyTo({
     center: state.center,
-    zoom: Math.max(map.getZoom(), 10),
+    zoom: Math.max(map.getZoom(), targetZoom),
     duration: 1200
   });
 }
@@ -862,11 +873,13 @@ function initAccordion() {
 async function boot() {
   loadViewState();
 
-  const [themesResponse, layoutsResponse] = await Promise.all([
+  const [configResponse, themesResponse, layoutsResponse] = await Promise.all([
+    fetch('/api/config'),
     fetch('themes.json'),
     fetch('layouts.json')
   ]);
 
+  appConfig = await configResponse.json();
   themesData = await themesResponse.json();
   layoutsData = await layoutsResponse.json();
 

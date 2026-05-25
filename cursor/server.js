@@ -5,8 +5,16 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
+const MAPBOX_TOKEN = String(process.env.MAPBOX_TOKEN || '').trim();
 
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/api/config', (_req, res) => {
+  res.json({
+    tileProvider: MAPBOX_TOKEN ? 'mapbox' : 'openfreemap',
+    mapboxToken: MAPBOX_TOKEN
+  });
+});
 
 app.get('/api/search', async (req, res) => {
   const query = String(req.query.q || '').trim();

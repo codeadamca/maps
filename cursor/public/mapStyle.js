@@ -22,7 +22,10 @@ function blendHex(hexA, hexB, weight = 0.5) {
 
 
 const OPENFREEMAP_SOURCE = "https://tiles.openfreemap.org/planet";
-const SOURCE_ID = "openfreemap";
+const OPENFREEMAP_SOURCE_ID = "openfreemap";
+const MAPBOX_SOURCE_ID = "mapbox-streets";
+const MAPBOX_STREETS_TILE_URL = "https://api.mapbox.com/v4/mapbox.mapbox-streets-v8/{z}/{x}/{y}.vector.pbf?access_token=";
+const MAPBOX_SOURCE_MAX_ZOOM = 16;
 
 /**
  * OpenFreeMap is OpenMapTiles-based and can generalize data at low zooms.
@@ -32,8 +35,10 @@ const SOURCE_MAX_ZOOM = 14;
 
 const BUILDING_BLEND_FACTOR = 0.14;
 const BUILDING_FILL_OPACITY = 0.84;
-const MAP_BUILDING_MIN_ZOOM_DEFAULT = 8;
-const MAP_BUILDING_MIN_ZOOM_PRESERVE = 8.2;
+const OPENFREEMAP_BUILDING_MIN_ZOOM_DEFAULT = 6.8;
+const OPENFREEMAP_BUILDING_MIN_ZOOM_PRESERVE = 7;
+const MAPBOX_BUILDING_MIN_ZOOM_DEFAULT = 2.8;
+const MAPBOX_BUILDING_MIN_ZOOM_PRESERVE = 3.2;
 const DETAIL_PRESERVE_DISTANCE_METERS = 30_000;
 
 const MAP_WATERWAY_WIDTH_STOPS = [
@@ -79,7 +84,36 @@ const MAP_ROAD_MINOR_LOW_CLASSES = [
 ];
 
 const MAP_ROAD_PATH_CLASSES = ["path", "pedestrian", "cycleway", "track"];
-const MAP_RAIL_CLASSES = ["rail", "transit"];
+const OPENFREEMAP_RAIL_CLASSES = ["rail", "transit"];
+const MAPBOX_RAIL_CLASSES = ["major_rail", "minor_rail", "service_rail"];
+const OPENFREEMAP_LANDCOVER_LAYER = "landcover";
+const OPENFREEMAP_PARK_LAYER = "park";
+const OPENFREEMAP_TRANSPORTATION_LAYER = "transportation";
+const MAPBOX_LANDUSE_LAYER = "landuse";
+const MAPBOX_ROAD_LAYER = "road";
+const MAPBOX_PARK_CLASSES = ["park"];
+const MAPBOX_LANDCOVER_CLASSES = [
+  "grass",
+  "wood",
+  "scrub",
+  "sand",
+  "rock",
+  "farmland",
+  "glacier",
+];
+const MAPBOX_ROAD_MAJOR_CLASSES = ["motorway"];
+const MAPBOX_ROAD_MINOR_HIGH_CLASSES = [
+  "primary",
+  "primary_link",
+  "secondary",
+  "secondary_link",
+  "trunk",
+  "trunk_link",
+  "motorway_link",
+];
+const MAPBOX_ROAD_MINOR_MID_CLASSES = ["tertiary", "tertiary_link"];
+const MAPBOX_ROAD_MINOR_LOW_CLASSES = ["street", "street_limited", "service"];
+const MAPBOX_ROAD_PATH_CLASSES = ["path", "pedestrian", "track"];
 
 /**
  * Two-stage minor/path rendering:
@@ -166,14 +200,21 @@ const MAP_OVERZOOM_SCALE = 5.5;
  */
 const OVERZOOM_LINE_WIDTH_SCALE = Math.pow(MAP_OVERZOOM_SCALE, 0.8);
 
-function resolveBuildingMinZoom(distanceMeters) {
+function resolveBuildingMinZoom(distanceMeters, providerName) {
+  const defaultMinZoom = providerName === "mapbox"
+    ? MAPBOX_BUILDING_MIN_ZOOM_DEFAULT
+    : OPENFREEMAP_BUILDING_MIN_ZOOM_DEFAULT;
+  const preserveMinZoom = providerName === "mapbox"
+    ? MAPBOX_BUILDING_MIN_ZOOM_PRESERVE
+    : OPENFREEMAP_BUILDING_MIN_ZOOM_PRESERVE;
+
   if (
     Number.isFinite(distanceMeters) &&
     Number(distanceMeters) <= DETAIL_PRESERVE_DISTANCE_METERS
   ) {
-    return MAP_BUILDING_MIN_ZOOM_PRESERVE;
+    return preserveMinZoom;
   }
-  return MAP_BUILDING_MIN_ZOOM_DEFAULT;
+  return defaultMinZoom;
 }
 
 function widthExpr(stops) {
@@ -207,7 +248,79 @@ function lineClassFilter(classes) {
   ];
 }
 
+function areaClassFilter(classes) {
+  return ["match", ["get", "class"], classes, true, false];
+}
+
+function getProviderConfig(options = {}) {
+  const useMapbox = options.provider === 'mapbox' && Boolean(options.mapboxToken);
+
+  if (useMapbox) {
+    return {
+      sourceId: MAPBOX_SOURCE_ID,
+      source: {
+        type: 'vector',
+        tiles: [`${MAPBOX_STREETS_TILE_URL}${options.mapboxToken}`],
+        minzoom: 0,
+        maxzoom: MAPBOX_SOURCE_MAX_ZOOM,
+      },
+      layers: {
+        landcover: MAPBOX_LANDUSE_LAYER,
+        park: MAPBOX_LANDUSE_LAYER,
+        water: 'water',
+        waterway: 'waterway',
+        aeroway: 'aeroway',
+        transportation: MAPBOX_ROAD_LAYER,
+        building: 'building',
+      },
+      filters: {
+        landcover: areaClassFilter(MAPBOX_LANDCOVER_CLASSES),
+        park: areaClassFilter(MAPBOX_PARK_CLASSES),
+        rail: lineClassFilter(MAPBOX_RAIL_CLASSES),
+      },
+      roadClasses: {
+        major: MAPBOX_ROAD_MAJOR_CLASSES,
+        minorHigh: MAPBOX_ROAD_MINOR_HIGH_CLASSES,
+        minorMid: MAPBOX_ROAD_MINOR_MID_CLASSES,
+        minorLow: MAPBOX_ROAD_MINOR_LOW_CLASSES,
+        path: MAPBOX_ROAD_PATH_CLASSES,
+      },
+    };
+  }
+
+  return {
+    sourceId: OPENFREEMAP_SOURCE_ID,
+    source: {
+      type: 'vector',
+      url: OPENFREEMAP_SOURCE,
+      maxzoom: SOURCE_MAX_ZOOM,
+    },
+    layers: {
+      landcover: OPENFREEMAP_LANDCOVER_LAYER,
+      park: OPENFREEMAP_PARK_LAYER,
+      water: 'water',
+      waterway: 'waterway',
+      aeroway: 'aeroway',
+      transportation: OPENFREEMAP_TRANSPORTATION_LAYER,
+      building: 'building',
+    },
+    filters: {
+      landcover: null,
+      park: null,
+      rail: lineClassFilter(OPENFREEMAP_RAIL_CLASSES),
+    },
+    roadClasses: {
+      major: MAP_ROAD_MAJOR_CLASSES,
+      minorHigh: MAP_ROAD_MINOR_HIGH_CLASSES,
+      minorMid: MAP_ROAD_MINOR_MID_CLASSES,
+      minorLow: MAP_ROAD_MINOR_LOW_CLASSES,
+      path: MAP_ROAD_PATH_CLASSES,
+    },
+  };
+}
+
 function generateMapStyle(theme, options = {}) {
+  const provider = getProviderConfig(options);
   const buildingFill =
     theme.map.buildings ||
     blendHex(
@@ -226,7 +339,15 @@ function generateMapStyle(theme, options = {}) {
   const includeRoadPath = options.includeRoadPath ?? true;
   const includeRoadMinorLow = options.includeRoadMinorLow ?? true;
   const includeRoadOutline = options.includeRoadOutline ?? true;
-  const buildingMinZoom = resolveBuildingMinZoom(options.distanceMeters);
+  const roadMajorClasses = provider.roadClasses.major;
+  const roadMinorHighClasses = provider.roadClasses.minorHigh;
+  const roadMinorMidClasses = provider.roadClasses.minorMid;
+  const roadMinorLowClasses = provider.roadClasses.minorLow;
+  const roadPathClasses = provider.roadClasses.path;
+  const buildingMinZoom = resolveBuildingMinZoom(
+    options.distanceMeters,
+    options.provider,
+  );
 
   const minorHighCasingStops = scaledStops(
     MAP_ROAD_MINOR_HIGH_DETAIL_WIDTH_STOPS,
@@ -281,11 +402,7 @@ function generateMapStyle(theme, options = {}) {
   return {
     version: 8,
     sources: {
-      [SOURCE_ID]: {
-        type: "vector",
-        url: OPENFREEMAP_SOURCE,
-        maxzoom: SOURCE_MAX_ZOOM,
-      },
+      [provider.sourceId]: provider.source,
     },
     layers: [
       {
@@ -298,10 +415,11 @@ function generateMapStyle(theme, options = {}) {
       // water can paint over it where they overlap.
       {
         id: "landcover",
-        source: SOURCE_ID,
-        "source-layer": "landcover",
+        source: provider.sourceId,
+        "source-layer": provider.layers.landcover,
         type: "fill" ,
         layout: { visibility: includeLandcover ? ("visible" ) : ("none" ) },
+        filter: provider.filters.landcover || undefined,
         paint: {
           "fill-color": theme.map.landcover,
           "fill-opacity": 0.7,
@@ -312,25 +430,26 @@ function generateMapStyle(theme, options = {}) {
       // are always covered by the water layer and don't bleed the parks color onto oceans.
       {
         id: "park",
-        source: SOURCE_ID,
-        "source-layer": "park",
+        source: provider.sourceId,
+        "source-layer": provider.layers.park,
         type: "fill" ,
         layout: { visibility: includeParks ? ("visible" ) : ("none" ) },
+        filter: provider.filters.park || undefined,
         paint: { "fill-color": theme.map.parks },
       },
 
       {
         id: "water",
-        source: SOURCE_ID,
-        "source-layer": "water",
+        source: provider.sourceId,
+        "source-layer": provider.layers.water,
         type: "fill" ,
         layout: { visibility: includeWater ? ("visible" ) : ("none" ) },
         paint: { "fill-color": theme.map.water },
       },
       {
         id: "waterway",
-        source: SOURCE_ID,
-        "source-layer": "waterway",
+        source: provider.sourceId,
+        "source-layer": provider.layers.waterway,
         type: "line" ,
         filter: lineClassFilter(["river", "canal", "stream", "ditch"]),
         paint: {
@@ -346,8 +465,8 @@ function generateMapStyle(theme, options = {}) {
 
       {
         id: "aeroway",
-        source: SOURCE_ID,
-        "source-layer": "aeroway",
+        source: provider.sourceId,
+        "source-layer": provider.layers.aeroway,
         type: "fill" ,
         filter: [
           "match",
@@ -364,24 +483,11 @@ function generateMapStyle(theme, options = {}) {
       },
 
       {
-        id: "building",
-        source: SOURCE_ID,
-        "source-layer": "building",
-        type: "fill" ,
-        minzoom: buildingMinZoom,
-        layout: { visibility: includeBuildings ? ("visible" ) : ("none" ) },
-        paint: {
-          "fill-color": buildingFill,
-          "fill-opacity": BUILDING_FILL_OPACITY,
-        },
-      },
-
-      {
         id: "rail",
-        source: SOURCE_ID,
-        "source-layer": "transportation",
+        source: provider.sourceId,
+        "source-layer": provider.layers.transportation,
         type: "line" ,
-        filter: lineClassFilter(MAP_RAIL_CLASSES),
+        filter: provider.filters.rail,
         paint: {
           "line-color": theme.map.rail,
           "line-width": widthExpr(railWidthStops),
@@ -400,36 +506,13 @@ function generateMapStyle(theme, options = {}) {
       },
 
       {
-        id: "road-minor-overview-high",
-        source: SOURCE_ID,
-        "source-layer": "transportation",
-        type: "line",
-        minzoom: ROAD_MINOR_OVERVIEW_MIN_ZOOM,
-        maxzoom: ROAD_OVERVIEW_MAX_ZOOM,
-        filter: lineClassFilter(MAP_ROAD_MINOR_HIGH_CLASSES),
-        paint: {
-          "line-color": roadMinorHighColor,
-          "line-width": widthExpr(roadMinorOverviewHighWidthStops),
-          "line-opacity": opacityExpr([
-            [0, 0.66],
-            [8, 0.76],
-            [12, 0],
-          ]),
-        },
-        layout: {
-          visibility: includeRoads ? ("visible" ) : ("none" ),
-          "line-cap": "round" ,
-          "line-join": "round" ,
-        },
-      },
-      {
         id: "road-minor-overview-mid",
-        source: SOURCE_ID,
-        "source-layer": "transportation",
+        source: provider.sourceId,
+        "source-layer": provider.layers.transportation,
         type: "line",
         minzoom: ROAD_MINOR_OVERVIEW_MIN_ZOOM,
         maxzoom: ROAD_OVERVIEW_MAX_ZOOM,
-        filter: lineClassFilter(MAP_ROAD_MINOR_MID_CLASSES),
+        filter: lineClassFilter(roadMinorMidClasses),
         paint: {
           "line-color": roadMinorMidColor,
           "line-width": widthExpr(roadMinorOverviewMidWidthStops),
@@ -446,13 +529,36 @@ function generateMapStyle(theme, options = {}) {
         },
       },
       {
-        id: "road-minor-overview-low",
-        source: SOURCE_ID,
-        "source-layer": "transportation",
+        id: "road-minor-overview-high",
+        source: provider.sourceId,
+        "source-layer": provider.layers.transportation,
         type: "line",
         minzoom: ROAD_MINOR_OVERVIEW_MIN_ZOOM,
         maxzoom: ROAD_OVERVIEW_MAX_ZOOM,
-        filter: lineClassFilter(MAP_ROAD_MINOR_LOW_CLASSES),
+        filter: lineClassFilter(roadMinorHighClasses),
+        paint: {
+          "line-color": roadMinorHighColor,
+          "line-width": widthExpr(roadMinorOverviewHighWidthStops),
+          "line-opacity": opacityExpr([
+            [0, 0.66],
+            [8, 0.76],
+            [12, 0],
+          ]),
+        },
+        layout: {
+          visibility: includeRoads ? ("visible" ) : ("none" ),
+          "line-cap": "round" ,
+          "line-join": "round" ,
+        },
+      },
+      {
+        id: "road-minor-overview-low",
+        source: provider.sourceId,
+        "source-layer": provider.layers.transportation,
+        type: "line",
+        minzoom: ROAD_MINOR_OVERVIEW_MIN_ZOOM,
+        maxzoom: ROAD_OVERVIEW_MAX_ZOOM,
+        filter: lineClassFilter(roadMinorLowClasses),
         paint: {
           "line-color": roadMinorLowColor,
           "line-width": widthExpr(roadMinorOverviewLowWidthStops),
@@ -472,12 +578,12 @@ function generateMapStyle(theme, options = {}) {
       },
       {
         id: "road-path-overview",
-        source: SOURCE_ID,
-        "source-layer": "transportation",
+        source: provider.sourceId,
+        "source-layer": provider.layers.transportation,
         type: "line",
         minzoom: ROAD_PATH_OVERVIEW_MIN_ZOOM,
         maxzoom: ROAD_OVERVIEW_MAX_ZOOM,
-        filter: lineClassFilter(MAP_ROAD_PATH_CLASSES),
+        filter: lineClassFilter(roadPathClasses),
         paint: {
           "line-color": roadPathColor,
           "line-width": widthExpr(roadPathOverviewWidthStops),
@@ -497,36 +603,12 @@ function generateMapStyle(theme, options = {}) {
       },
 
       {
-        id: "road-minor-high-casing",
-        source: SOURCE_ID,
-        "source-layer": "transportation",
-        type: "line",
-        minzoom: ROAD_MINOR_DETAIL_MIN_ZOOM,
-        filter: lineClassFilter(MAP_ROAD_MINOR_HIGH_CLASSES),
-        paint: {
-          "line-color": roadOutlineColor,
-          "line-width": widthExpr(roadMinorHighCasingStops),
-          "line-opacity": includeRoadOutline
-            ? opacityExpr([
-                [6, 0.72],
-                [12, 0.85],
-                [18, 0.92],
-              ])
-            : 0,
-        },
-        layout: {
-          visibility: includeRoads ? ("visible" ) : ("none" ),
-          "line-cap": "round" ,
-          "line-join": "round" ,
-        },
-      },
-      {
         id: "road-minor-mid-casing",
-        source: SOURCE_ID,
-        "source-layer": "transportation",
+        source: provider.sourceId,
+        "source-layer": provider.layers.transportation,
         type: "line",
         minzoom: ROAD_MINOR_DETAIL_MIN_ZOOM,
-        filter: lineClassFilter(MAP_ROAD_MINOR_MID_CLASSES),
+        filter: lineClassFilter(roadMinorMidClasses),
         paint: {
           "line-color": roadOutlineColor,
           "line-width": widthExpr(roadMinorMidCasingStops),
@@ -545,12 +627,36 @@ function generateMapStyle(theme, options = {}) {
         },
       },
       {
+        id: "road-minor-high-casing",
+        source: provider.sourceId,
+        "source-layer": provider.layers.transportation,
+        type: "line",
+        minzoom: ROAD_MINOR_DETAIL_MIN_ZOOM,
+        filter: lineClassFilter(roadMinorHighClasses),
+        paint: {
+          "line-color": roadOutlineColor,
+          "line-width": widthExpr(roadMinorHighCasingStops),
+          "line-opacity": includeRoadOutline
+            ? opacityExpr([
+                [6, 0.72],
+                [12, 0.85],
+                [18, 0.92],
+              ])
+            : 0,
+        },
+        layout: {
+          visibility: includeRoads ? ("visible" ) : ("none" ),
+          "line-cap": "round" ,
+          "line-join": "round" ,
+        },
+      },
+      {
         id: "road-path-casing",
-        source: SOURCE_ID,
-        "source-layer": "transportation",
+        source: provider.sourceId,
+        "source-layer": provider.layers.transportation,
         type: "line",
         minzoom: ROAD_PATH_DETAIL_MIN_ZOOM,
-        filter: lineClassFilter(MAP_ROAD_PATH_CLASSES),
+        filter: lineClassFilter(roadPathClasses),
         paint: {
           "line-color": roadOutlineColor,
           "line-width": widthExpr(roadPathCasingStops),
@@ -570,10 +676,10 @@ function generateMapStyle(theme, options = {}) {
       },
       {
         id: "road-major-casing",
-        source: SOURCE_ID,
-        "source-layer": "transportation",
+        source: provider.sourceId,
+        "source-layer": provider.layers.transportation,
         type: "line",
-        filter: lineClassFilter(MAP_ROAD_MAJOR_CLASSES),
+        filter: lineClassFilter(roadMajorClasses),
         paint: {
           "line-color": roadOutlineColor,
           "line-width": widthExpr(roadMajorCasingStops),
@@ -587,34 +693,12 @@ function generateMapStyle(theme, options = {}) {
       },
 
       {
-        id: "road-minor-high",
-        source: SOURCE_ID,
-        "source-layer": "transportation",
-        type: "line",
-        minzoom: ROAD_MINOR_DETAIL_MIN_ZOOM,
-        filter: lineClassFilter(MAP_ROAD_MINOR_HIGH_CLASSES),
-        paint: {
-          "line-color": roadMinorHighColor,
-          "line-width": widthExpr(roadMinorDetailHighWidthStops),
-          "line-opacity": opacityExpr([
-            [6, 0.84],
-            [10, 0.92],
-            [18, 1],
-          ]),
-        },
-        layout: {
-          visibility: includeRoads ? ("visible" ) : ("none" ),
-          "line-cap": "round" ,
-          "line-join": "round" ,
-        },
-      },
-      {
         id: "road-minor-mid",
-        source: SOURCE_ID,
-        "source-layer": "transportation",
+        source: provider.sourceId,
+        "source-layer": provider.layers.transportation,
         type: "line",
         minzoom: ROAD_MINOR_DETAIL_MIN_ZOOM,
-        filter: lineClassFilter(MAP_ROAD_MINOR_MID_CLASSES),
+        filter: lineClassFilter(roadMinorMidClasses),
         paint: {
           "line-color": roadMinorMidColor,
           "line-width": widthExpr(roadMinorDetailMidWidthStops),
@@ -631,12 +715,34 @@ function generateMapStyle(theme, options = {}) {
         },
       },
       {
-        id: "road-minor-low",
-        source: SOURCE_ID,
-        "source-layer": "transportation",
+        id: "road-minor-high",
+        source: provider.sourceId,
+        "source-layer": provider.layers.transportation,
         type: "line",
         minzoom: ROAD_MINOR_DETAIL_MIN_ZOOM,
-        filter: lineClassFilter(MAP_ROAD_MINOR_LOW_CLASSES),
+        filter: lineClassFilter(roadMinorHighClasses),
+        paint: {
+          "line-color": roadMinorHighColor,
+          "line-width": widthExpr(roadMinorDetailHighWidthStops),
+          "line-opacity": opacityExpr([
+            [6, 0.84],
+            [10, 0.92],
+            [18, 1],
+          ]),
+        },
+        layout: {
+          visibility: includeRoads ? ("visible" ) : ("none" ),
+          "line-cap": "round" ,
+          "line-join": "round" ,
+        },
+      },
+      {
+        id: "road-minor-low",
+        source: provider.sourceId,
+        "source-layer": provider.layers.transportation,
+        type: "line",
+        minzoom: ROAD_MINOR_DETAIL_MIN_ZOOM,
+        filter: lineClassFilter(roadMinorLowClasses),
         paint: {
           "line-color": roadMinorLowColor,
           "line-width": widthExpr(roadMinorDetailLowWidthStops),
@@ -656,11 +762,11 @@ function generateMapStyle(theme, options = {}) {
       },
       {
         id: "road-path",
-        source: SOURCE_ID,
-        "source-layer": "transportation",
+        source: provider.sourceId,
+        "source-layer": provider.layers.transportation,
         type: "line",
         minzoom: ROAD_PATH_DETAIL_MIN_ZOOM,
-        filter: lineClassFilter(MAP_ROAD_PATH_CLASSES),
+        filter: lineClassFilter(roadPathClasses),
         paint: {
           "line-color": roadPathColor,
           "line-width": widthExpr(roadPathDetailWidthStops),
@@ -680,10 +786,10 @@ function generateMapStyle(theme, options = {}) {
       },
       {
         id: "road-major",
-        source: SOURCE_ID,
-        "source-layer": "transportation",
+        source: provider.sourceId,
+        "source-layer": provider.layers.transportation,
         type: "line",
-        filter: lineClassFilter(MAP_ROAD_MAJOR_CLASSES),
+        filter: lineClassFilter(roadMajorClasses),
         paint: {
           "line-color": theme.map.roads.major,
           "line-width": widthExpr(roadMajorWidthStops),
@@ -692,6 +798,29 @@ function generateMapStyle(theme, options = {}) {
           visibility: includeRoads ? ("visible" ) : ("none" ),
           "line-cap": "round" ,
           "line-join": "round" ,
+        },
+      },
+      {
+        id: "building",
+        source: provider.sourceId,
+        "source-layer": provider.layers.building,
+        type: "fill" ,
+        minzoom: buildingMinZoom,
+        layout: { visibility: includeBuildings ? ("visible" ) : ("none" ) },
+        paint: {
+          "fill-color": buildingFill,
+          "fill-opacity": options.provider === "mapbox"
+            ? opacityExpr([
+                [2.8, 0.08],
+                [3.6, 0.13],
+                [4.6, 0.2],
+                [5.6, 0.28],
+                [6.6, 0.36],
+                [8, 0.44],
+                [10, 0.58],
+                [13, BUILDING_FILL_OPACITY],
+              ])
+            : BUILDING_FILL_OPACITY,
         },
       },
     ],
