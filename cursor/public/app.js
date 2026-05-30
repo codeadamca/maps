@@ -856,6 +856,156 @@ function pickClosestFontWeight(weights, targetWeight) {
   }, null);
 }
 
+// Evaluates a MapLibre GL "interpolate linear zoom" expression at the given zoom.
+// Returns the plain number if expr is already a number; returns null for unknown expressions.
+function evalGlInterpolateAtZoom(expr, zoom) {
+  if (typeof expr === 'number') return expr;
+  if (
+    Array.isArray(expr) &&
+    expr[0] === 'interpolate' &&
+    Array.isArray(expr[2]) && expr[2][0] === 'zoom'
+  ) {
+    const stops = [];
+    for (let i = 3; i + 1 < expr.length; i += 2) {
+      stops.push([expr[i], expr[i + 1]]);
+    }
+    if (!stops.length) return 0;
+    if (zoom <= stops[0][0]) return stops[0][1];
+    if (zoom >= stops[stops.length - 1][0]) return stops[stops.length - 1][1];
+    for (let i = 0; i < stops.length - 1; i++) {
+      const [z0, v0] = stops[i];
+      const [z1, v1] = stops[i + 1];
+      if (zoom >= z0 && zoom <= z1) {
+        return v0 + ((zoom - z0) / (z1 - z0)) * (v1 - v0);
+      }
+    }
+    return stops[stops.length - 1][1];
+  }
+  return null;
+}
+
+// Renders the map as vector SVG paths by querying MapLibre's rendered features
+// and projecting their GeoJSON coordinates into the SVG coordinate system.
+function buildVectorMapSvg(theme, width, mapHeight) {
+  const zoom = map.getZoom();
+  const canvas = map.getCanvas();
+  // clientWidth/Height are CSS pixels; map.project() also returns CSS pixels.
+  const cw = canvas.clientWidth || canvas.width;
+  const ch = canvas.clientHeight || canvas.height;
+  const sx = width / cw;
+  const sy = mapHeight / ch;
+
+  function project(coord) {
+    const pt = map.project({ lng: coord[0], lat: coord[1] });
+    return [pt.x * sx, pt.y * sy];
+  }
+
+  function ringToD(coords, close) {
+    const parts = [];
+    for (let i = 0; i < coords.length; i++) {
+      const [x, y] = project(coords[i]);
+      parts.push(`${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`);
+    }
+    if (close) parts.push('Z');
+    return parts.join('');
+  }
+
+  function featureToD(feature) {
+    const g = feature.geometry;
+    if (!g) return '';
+    switch (g.type) {
+      case 'Polygon':
+        return g.coordinates.map(r => ringToD(r, true)).join('');
+      case 'MultiPolygon':
+        return g.coordinates.flatMap(p => p.map(r => ringToD(r, true))).join('');
+      case 'LineString':
+        return ringToD(g.coordinates, false);
+      case 'MultiLineString':
+        return g.coordinates.map(l => ringToD(l, false)).join('');
+      default:
+        return '';
+    }
+  }
+
+  function queryLayer(layerId) {
+    if (!map.getLayer(layerId)) return [];
+    return map.queryRenderedFeatures({ layers: [layerId] });
+  }
+
+  function safeGetPaint(layerId, prop) {
+    try { return map.getPaintProperty(layerId, prop); } catch (_) { return null; }
+  }
+
+  function evalPaintNumber(layerId, prop, fallback) {
+    const val = safeGetPaint(layerId, prop);
+    if (val == null) return fallback;
+    const evaled = evalGlInterpolateAtZoom(val, zoom);
+    if (evaled != null) return evaled;
+    if (typeof val === 'number') return val;
+    return fallback;
+  }
+
+  function renderFillLayer(layerId) {
+    const opacity = evalPaintNumber(layerId, 'fill-opacity', 1);
+    if (opacity <= 0) return '';
+    const features = queryLayer(layerId);
+    if (!features.length) return '';
+    const paths = features.map(f => featureToD(f)).filter(Boolean);
+    if (!paths.length) return '';
+    const fill = safeGetPaint(layerId, 'fill-color') || '#ffffff';
+    const opAttr = Math.abs(opacity - 1) > 0.001 ? ` fill-opacity="${opacity.toFixed(3)}"` : '';
+    return `  <path d="${paths.join('')}" fill="${escapeXml(String(fill))}"${opAttr}/>`;
+  }
+
+  function renderLineLayer(layerId) {
+    const opacity = evalPaintNumber(layerId, 'line-opacity', 1);
+    if (opacity <= 0) return '';
+    const features = queryLayer(layerId);
+    if (!features.length) return '';
+    const paths = features.map(f => featureToD(f)).filter(Boolean);
+    if (!paths.length) return '';
+    const stroke = safeGetPaint(layerId, 'line-color') || '#000000';
+    const widthPx = evalPaintNumber(layerId, 'line-width', 1);
+    const strokeWidth = (widthPx * sx).toFixed(2);
+    const opAttr = Math.abs(opacity - 1) > 0.001 ? ` stroke-opacity="${opacity.toFixed(3)}"` : '';
+    // MapLibre line-dasharray values are multiples of line-width, so scale accordingly.
+    const dashRaw = safeGetPaint(layerId, 'line-dasharray');
+    const dashAttr = Array.isArray(dashRaw) && dashRaw.length >= 2
+      ? ` stroke-dasharray="${dashRaw.map(v => (v * widthPx * sx).toFixed(2)).join(',')}"`
+      : '';
+    let lineCap = 'butt';
+    let lineJoin = 'miter';
+    try {
+      const capRaw = map.getLayoutProperty(layerId, 'line-cap');
+      const joinRaw = map.getLayoutProperty(layerId, 'line-join');
+      if (typeof capRaw === 'string') lineCap = capRaw;
+      if (typeof joinRaw === 'string') lineJoin = joinRaw;
+    } catch (_) {}
+    return `  <path d="${paths.join('')}" fill="none" stroke="${escapeXml(String(stroke))}" stroke-width="${strokeWidth}" stroke-linecap="${lineCap}" stroke-linejoin="${lineJoin}"${opAttr}${dashAttr}/>`;
+  }
+
+  const ALL_LAYER_IDS = [
+    'landcover', 'park', 'water', 'waterway', 'aeroway',
+    'rail',
+    'road-minor-overview-low', 'road-minor-overview-mid', 'road-minor-overview-high',
+    'road-path-overview',
+    'road-path-casing', 'road-minor-mid-casing', 'road-minor-high-casing', 'road-major-casing',
+    'road-minor-low', 'road-minor-mid', 'road-minor-high', 'road-path', 'road-major',
+    'building'
+  ];
+  const FILL_LAYER_IDS = new Set(['landcover', 'park', 'water', 'aeroway', 'building']);
+
+  const parts = [
+    `<defs><clipPath id="map-clip"><rect x="0" y="0" width="${width}" height="${mapHeight}"/></clipPath></defs>`,
+    `<g clip-path="url(#map-clip)">`,
+    `  <rect x="0" y="0" width="${width}" height="${mapHeight}" fill="${escapeXml(theme.map.land)}"/>`,
+    ...ALL_LAYER_IDS.map(id => FILL_LAYER_IDS.has(id) ? renderFillLayer(id) : renderLineLayer(id)),
+    `</g>`
+  ].filter(Boolean);
+
+  return parts.join('\n');
+}
+
 function blobToDataUrl(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -944,7 +1094,6 @@ async function exportSvg() {
     const theme = getTheme();
     const { width, height, labelBand, mapHeight, titleSize, subtitleSize, titleY, subtitleY } = getPosterMetrics();
     const svgSize = getSvgDocumentSize();
-    const mapDataUrl = map.getCanvas().toDataURL('image/png');
     const fontConfig = getSvgFontConfig(state.fontFamily);
     const subtitleFontWeight = pickClosestFontWeight(fontConfig.weights, 500);
     let embeddedFontStyle = '';
@@ -955,12 +1104,14 @@ async function exportSvg() {
       console.warn('Failed to embed SVG font, falling back to installed fonts.', error);
     }
 
+    const mapVectorSvg = buildVectorMapSvg(theme, width, mapHeight);
+
     const svg = [
       '<?xml version="1.0" encoding="UTF-8"?>',
       `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${svgSize.width}" height="${svgSize.height}" viewBox="0 0 ${width} ${height}">`,
       embeddedFontStyle,
       `  <rect width="${width}" height="${height}" fill="${escapeXml(theme.ui.bg)}" />`,
-      `  <image href="${mapDataUrl}" xlink:href="${mapDataUrl}" x="0" y="0" width="${width}" height="${mapHeight}" preserveAspectRatio="none" />`,
+      mapVectorSvg,
       buildCompassSvg(theme, width, mapHeight),
       `  <rect x="0" y="${mapHeight}" width="${width}" height="${labelBand}" fill="${escapeXml(theme.ui.bg)}" />`,
       `  <text x="${Math.round(width / 2)}" y="${titleY}" text-anchor="middle" dominant-baseline="middle" fill="${escapeXml(theme.ui.text)}" font-family="${escapeXml(fontConfig.family)}, sans-serif" font-size="${titleSize}" font-weight="700">${escapeXml(state.city)}</text>`,
