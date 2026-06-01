@@ -148,18 +148,6 @@ const POI_ICONS = [
   'fa-solid fa-8',
   'fa-solid fa-9'
 ];
-// Emoji equivalents used as final fallback when FA font cannot be loaded.
-const POI_ICONS_EMOJI = ['📍', '⭐', '🏕️', '🏔️', '🏊', '🚤', '🎣', '🌲', '🏠', '📸', '🏢', '⛪', '🏛️', '🚌', '🍽️', '⛷️', '🥾', '🍃', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-// FA 6 Solid unicode codepoints — index-matched to POI_ICONS.
-// Numbers 1-9 use standard ASCII digits which FA 6 renders as styled numerals at weight 900.
-const POI_ICONS_UNICODE = [
-  '\uf3c5', '\uf005', '\uf6bb', '\uf6fc', '\uf5c4', '\ue612',
-  '\uf578', '\uf1bb', '\uf015', '\uf030', '\uf1ad', '\uf51d',
-  '\uf66f', '\uf207', '\uf2e7', '\uf7c9', '\uf6ec', '\uf06c',
-  '1', '2', '3', '4', '5', '6', '7', '8', '9'
-];
-// FA 6 Free solid woff2 — embedded into SVG exports so icons render everywhere.
-const FA_SOLID_WOFF2_URL = 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/webfonts/fa-solid-900.woff2';
 
 // FA 6 Solid SVG path data — used for reliable icon rendering in PNG (Path2D) and SVG exports.
 // Each entry: { vbW, vbH, d } where vbW/vbH are the viewBox dimensions and d is the path data.
@@ -482,7 +470,7 @@ function getCompassPalette(theme) {
 }
 
 function getCompassMetrics(width, mapHeight) {
-  const size = Math.max(72, Math.round(Math.min(width, mapHeight) * 0.13));
+  const size = Math.max(108, Math.round(Math.min(width, mapHeight) * 0.195));
   const radius = Math.round(size / 2);
   const inset = Math.max(28, Math.round(size * 0.32));
 
@@ -1288,12 +1276,30 @@ async function waitForMapReadyForExport() {
   await waitForNextFrame();
 }
 
+async function waitForCanvasTextFonts(fontFamily) {
+  if (!document.fonts?.load) return;
+
+  const config = getSvgFontConfig(fontFamily);
+  const weights = [...new Set([
+    700,
+    pickClosestFontWeight(config.weights, 500)
+  ])].filter(Boolean);
+
+  try {
+    await Promise.all(weights.map(weight => document.fonts.load(`${weight} 32px "${config.family}"`)));
+    await document.fonts.ready;
+  } catch (error) {
+    console.warn('Canvas font preload failed, falling back to installed fonts.', error);
+  }
+}
+
 async function exportPng() {
   exportButton.disabled = true;
   exportButton.textContent = 'Exporting…';
 
   try {
     await waitForMapReadyForExport();
+    await waitForCanvasTextFonts(state.fontFamily);
 
     const theme = getTheme();
     const { width, height, labelBand, mapHeight, titleSize, subtitleSize, titleY, subtitleY } = getPosterMetrics();
@@ -1314,9 +1320,6 @@ async function exportPng() {
 
     drawCompass(ctx, theme, width, mapHeight);
 
-    if (poiList.length) {
-      await loadFaForCanvas();
-    }
     drawPoiPng(ctx, width, mapHeight);
 
     ctx.fillStyle = theme.ui.text;
@@ -1551,6 +1554,23 @@ function svgPathIcon(iconIdx, cx, cy, size, color) {
   return `<path d="${icon.d}" transform="translate(${ox},${oy}) scale(${scale.toFixed(6)})" fill="${escapeXml(color)}"/>`;
 }
 
+function drawRoundedRect(ctx, x, y, width, height, radius, color) {
+  const r = Math.max(0, Math.min(radius, width / 2, height / 2));
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + width - r, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+  ctx.lineTo(x + width, y + height - r);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+  ctx.lineTo(x + r, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
 /** Draw POI overlays onto a Canvas 2D context for PNG export. */
 function drawPoiPng(ctx, exportWidth, mapHeight) {
   if (!poiList.length) return;
@@ -1559,6 +1579,7 @@ function drawPoiPng(ctx, exportWidth, mapHeight) {
   const textColor = theme.ui.text;
   const bgColor   = theme.ui.bg;
   const { height } = getPosterMetrics(); // full poster height (map + label band)
+  const boxRadius = 2;
 
   const fontSize = Math.max(18, Math.round(exportWidth * 0.024));
   const padH     = Math.round(exportWidth * 0.018);
@@ -1603,10 +1624,10 @@ function drawPoiPng(ctx, exportWidth, mapHeight) {
       ctx.fillStyle = textColor;
       ctx.fill();
 
-      // Inner white circle
+      // Inner circle
       ctx.beginPath();
       ctx.arc(tipX, bodyY, innerR, 0, Math.PI * 2);
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = bgColor;
       ctx.fill();
 
       // Icon centred in inner circle
@@ -1626,23 +1647,25 @@ function drawPoiPng(ctx, exportWidth, mapHeight) {
     ctx.font = `700 ${lf}px "${state.fontFamily}", sans-serif`;
     const maxTextW = Math.max(...poiList.map(p => ctx.measureText(p.name).width));
     const boxW = iconColW + maxTextW + lPadH * 2 + 6;
-    const boxH = rowH * poiList.length + lPadV * 2;
+    const boxH = Math.max(rowH, rowH * poiList.length + lPadV * 2);
 
+    const _margin = Math.round(exportWidth * 0.02);
     let bx, by;
     if (poiLegendPos) {
       bx = (poiLegendPos.x / 100) * exportWidth;
       by = (poiLegendPos.y / 100) * height;
     } else {
-      bx = exportWidth - boxW - Math.round(exportWidth * 0.02);
-      by = mapHeight   - boxH - Math.round(exportWidth * 0.02);
+      bx = exportWidth - boxW - _margin;
+      by = mapHeight   - boxH - _margin;
     }
+    bx = Math.max(0, Math.min(bx, exportWidth - boxW));
+    by = Math.max(0, Math.min(by, mapHeight - boxH));
 
-    ctx.fillStyle = textColor;
-    ctx.fillRect(bx, by, boxW, boxH);
+    drawRoundedRect(ctx, bx, by, boxW, boxH, boxRadius, textColor);
 
     poiList.forEach((poi, i) => {
       const ty = by + lPadV + rowH * i + rowH / 2;
-      drawPathIcon(ctx, poi.iconIdx, bx + lPadH + lf * 0.5, ty, lf * 0.75, bgColor);
+      drawPathIcon(ctx, poi.iconIdx, bx + lPadH + lf * 0.5, ty, lf * 0.9, bgColor);
       ctx.textBaseline = 'middle';
       ctx.textAlign    = 'left';
       ctx.fillStyle    = bgColor;
@@ -1684,14 +1707,15 @@ function drawPoiPng(ctx, exportWidth, mapHeight) {
       ctx.fill();
 
       // Box
-      ctx.fillStyle = textColor;
-      ctx.fillRect(bx, by, totalW, boxH);
+      drawRoundedRect(ctx, bx, by, totalW, boxH, boxRadius, textColor);
 
       // Icon
-      drawPathIcon(ctx, poi.iconIdx, bx + padH + iconW / 2, by + boxH / 2, fontSize * 0.75, bgColor);
+      drawPathIcon(ctx, poi.iconIdx, bx + padH + iconW / 2, by + boxH / 2, fontSize * 0.9, bgColor);
 
       // Label text
       ctx.font      = `700 ${fontSize}px "${state.fontFamily}", sans-serif`;
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'left';
       ctx.fillStyle = bgColor;
       ctx.fillText(poi.name, bx + padH + iconW + 6, by + boxH / 2);
 
@@ -1740,7 +1764,7 @@ function buildPoiSvg(exportWidth, mapHeight) {
       lines.push(`<g filter="drop-shadow(0 3px 7px rgba(0,0,0,.45))">`);
       lines.push(`  <polygon points="${(tipX-triW).toFixed(1)},${bodyY.toFixed(1)} ${(tipX+triW).toFixed(1)},${bodyY.toFixed(1)} ${tipX.toFixed(1)},${tipY.toFixed(1)}" fill="${escapeXml(textColor)}"/>`);
       lines.push(`  <circle cx="${tipX.toFixed(1)}" cy="${bodyY.toFixed(1)}" r="${pinR}" fill="${escapeXml(textColor)}"/>`);
-      lines.push(`  <circle cx="${tipX.toFixed(1)}" cy="${bodyY.toFixed(1)}" r="${innerR}" fill="#fff"/>`);
+      lines.push(`  <circle cx="${tipX.toFixed(1)}" cy="${bodyY.toFixed(1)}" r="${innerR}" fill="${escapeXml(bgColor)}"/>`);
       lines.push(svgPathIcon(poi.iconIdx, tipX, bodyY, iconF * 0.9, textColor));
       lines.push(`</g>`);
     });
@@ -1751,21 +1775,25 @@ function buildPoiSvg(exportWidth, mapHeight) {
     const lPadH    = Math.round(exportWidth * 0.014);
     const lPadV    = Math.round(exportWidth * 0.012);
     const iconColW = lf * 1.4;
-    const maxNameLen = Math.max(...poiList.map(p => p.name.length));
-    const approxCharW = lf * 0.6;
-    const boxW = iconColW + maxNameLen * approxCharW + lPadH * 2 + 6;
-    const boxH = rowH * poiList.length + lPadV * 2;
+    const _svgMeasCtx = document.createElement('canvas').getContext('2d');
+    _svgMeasCtx.font = `700 ${lf}px "${state.fontFamily}", sans-serif`;
+    const maxTextW = Math.max(...poiList.map(p => _svgMeasCtx.measureText(p.name).width));
+    const boxW = iconColW + maxTextW + lPadH * 2 + 6;
+    const boxH = Math.max(rowH, rowH * poiList.length + lPadV * 2);
 
+    const _svgMargin = Math.round(exportWidth * 0.02);
     let bx, by;
     if (poiLegendPos) {
       bx = (poiLegendPos.x / 100) * exportWidth;
       by = (poiLegendPos.y / 100) * height;
     } else {
-      bx = exportWidth - boxW - Math.round(exportWidth * 0.02);
-      by = mapHeight   - boxH - Math.round(exportWidth * 0.02);
+      bx = exportWidth - boxW - _svgMargin;
+      by = mapHeight   - boxH - _svgMargin;
     }
+    bx = Math.max(0, Math.min(bx, exportWidth - boxW));
+    by = Math.max(0, Math.min(by, mapHeight - boxH));
 
-    lines.push(`<rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${boxW.toFixed(1)}" height="${boxH.toFixed(1)}" fill="${escapeXml(textColor)}"/>`);
+    lines.push(`<rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${boxW.toFixed(1)}" height="${boxH.toFixed(1)}" rx="2" ry="2" fill="${escapeXml(textColor)}"/>`);
     poiList.forEach((poi, i) => {
       const rowCy = by + lPadV + rowH * i + rowH / 2;
       const ty = (rowCy + lf * 0.36).toFixed(1);
@@ -1801,7 +1829,7 @@ function buildPoiSvg(exportWidth, mapHeight) {
 
       lines.push(`<g>`);
       lines.push(`  <polygon points="${(midX-half).toFixed(1)},${(by+boxH).toFixed(1)} ${(midX+half).toFixed(1)},${(by+boxH).toFixed(1)} ${anchor.x.toFixed(1)},${anchor.y.toFixed(1)}" fill="${escapeXml(textColor)}"/>`);
-      lines.push(`  <rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${totalW.toFixed(1)}" height="${boxH.toFixed(1)}" fill="${escapeXml(textColor)}"/>`);
+      lines.push(`  <rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${totalW.toFixed(1)}" height="${boxH.toFixed(1)}" rx="2" ry="2" fill="${escapeXml(textColor)}"/>`);
       lines.push(svgPathIcon(poi.iconIdx, bx + padH + iconW / 2, by + boxH / 2, fontSize * 0.75, bgColor));
       lines.push(`  <text x="${(bx+padH+iconW+6).toFixed(1)}" y="${textBaseY}" font-size="${fontSize}" font-weight="700" font-family="${escapeXml(state.fontFamily)}, sans-serif" fill="${escapeXml(bgColor)}">${escapeXml(poi.name)}</text>`);
       lines.push(`  <circle cx="${anchor.x.toFixed(1)}" cy="${anchor.y.toFixed(1)}" r="${dotR}" fill="${escapeXml(textColor)}"/>`);
@@ -1811,72 +1839,6 @@ function buildPoiSvg(exportWidth, mapHeight) {
 
   lines.push('</g>');
   return lines.join('\n');
-}
-
-let _canvasFaFontFamily = null;
-
-/**
- * Loads FA 6 Solid woff2 via the FontFace API so canvas can use it.
- * Checks document.fonts first (in case the FA kit already loaded it),
- * then fetches from jsDelivr and registers explicitly. Caches the result.
- */
-async function loadFaForCanvas() {
-  if (_canvasFaFontFamily !== null) return _canvasFaFontFamily;
-
-  // Check if the FA kit already registered a loaded font
-  for (const f of document.fonts) {
-    if (f.status === 'loaded' && /font awesome/i.test(f.family.replace(/['"/]/g, ''))) {
-      _canvasFaFontFamily = f.family.replace(/['"/]/g, '');
-      return _canvasFaFontFamily;
-    }
-  }
-
-  // Fetch and register explicitly via FontFace API
-  try {
-    const resp = await fetch(FA_SOLID_WOFF2_URL);
-    if (!resp.ok) throw new Error(`FA font HTTP ${resp.status}`);
-    const arrayBuffer = await resp.arrayBuffer();
-    const font = new FontFace('Font Awesome 6 Free', arrayBuffer, { weight: '900', style: 'normal' });
-    await font.load();
-    document.fonts.add(font);
-    _canvasFaFontFamily = 'Font Awesome 6 Free';
-  } catch (e) {
-    console.warn('Could not load FA font for canvas export:', e);
-    _canvasFaFontFamily = '';
-  }
-  return _canvasFaFontFamily;
-}
-
-/** Returns a canvas font string if FA was loaded via loadFaForCanvas(), else null. */
-function getFaCanvasFont(size) {
-  if (_canvasFaFontFamily) {
-    return `900 ${size}px "${_canvasFaFontFamily}"`;
-  }
-  return null;
-}
-
-let _svgFaFontFaceCache = null;
-
-/** Fetches the FA 6 solid woff2 and returns an @font-face CSS string for SVG embedding. */
-async function fetchFaSvgFontFace() {
-  if (_svgFaFontFaceCache !== null) return _svgFaFontFaceCache;
-  try {
-    const resp = await fetch(FA_SOLID_WOFF2_URL);
-    if (!resp.ok) throw new Error(`FA font HTTP ${resp.status}`);
-    const dataUrl = await blobToDataUrl(await resp.blob());
-    _svgFaFontFaceCache = [
-      "@font-face {",
-      "  font-family: 'Font Awesome 6 Free';",
-      "  font-style: normal;",
-      "  font-weight: 900;",
-      `  src: url('${dataUrl}') format('woff2');`,
-      "}"
-    ].join('\n');
-  } catch (e) {
-    console.warn('Could not embed FA font in SVG, falling back to emoji:', e);
-    _svgFaFontFaceCache = '';
-  }
-  return _svgFaFontFaceCache;
 }
 
 function blobToDataUrl(blob) {
@@ -1973,9 +1935,6 @@ async function exportSvg() {
 
     try {
       const extraFaces = [];
-      if (poiList.length) {
-        try { const fa = await fetchFaSvgFontFace(); if (fa) extraFaces.push(fa); } catch (e) {}
-      }
       embeddedFontStyle = await buildSvgFontStyle(fontConfig.family, extraFaces);
     } catch (error) {
       console.warn('Failed to embed SVG font, falling back to installed fonts.', error);

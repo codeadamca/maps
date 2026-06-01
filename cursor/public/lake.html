@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lake Designer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&family=Roboto+Condensed:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="/styles.css" rel="stylesheet">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <header class="sidebar-header">
+        <a href="/" class="sidebar-home-link">Home</a>
+        <h1>Lake Designer</h1>
+        <p class="sidebar-tagline">Search for a lake and generate a clean vector poster with fixed portrait layout.</p>
+      </header>
+
+      <section class="location-panel">
+        <h2 class="location-heading">Location</h2>
+        <div class="search-wrap">
+          <input type="search" id="location-search" placeholder="Search lake…" autocomplete="off">
+          <ul id="search-results" class="search-results" hidden></ul>
+        </div>
+      </section>
+
+      <nav class="accordion" id="sidebar-accordion" aria-label="Lake poster settings">
+        <section class="accordion-item" data-accordion-id="theme">
+          <button type="button" class="accordion-trigger" aria-expanded="false" aria-controls="panel-theme" id="trigger-theme">
+            <span class="accordion-label">Theme</span>
+            <span class="accordion-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-panel" id="panel-theme" role="region" aria-labelledby="trigger-theme" hidden>
+            <div id="theme-grid" class="theme-grid"></div>
+          </div>
+        </section>
+
+        <section class="accordion-item" data-accordion-id="labels">
+          <button type="button" class="accordion-trigger" aria-expanded="false" aria-controls="panel-labels" id="trigger-labels">
+            <span class="accordion-label">Labels</span>
+            <span class="accordion-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-panel" id="panel-labels" role="region" aria-labelledby="trigger-labels" hidden>
+            <label class="field">
+              <span>Title</span>
+              <input type="text" id="label-city" maxlength="80">
+            </label>
+            <label class="field">
+              <span>Subtitle</span>
+              <input type="text" id="label-country" maxlength="80">
+            </label>
+            <label class="field">
+              <span>Font</span>
+              <select id="label-font">
+                <option value="Playfair Display">Playfair Display</option>
+                <option value="Inter">Inter</option>
+                <option value="Roboto Condensed">Roboto Condensed</option>
+                <option value="Cormorant Garamond">Cormorant Garamond</option>
+              </select>
+            </label>
+          </div>
+        </section>
+      </nav>
+
+      <div class="export-actions">
+        <button type="button" id="export-png" class="btn-primary">Download PNG</button>
+        <button type="button" id="export-svg" class="btn-secondary">Download SVG</button>
+      </div>
+    </aside>
+
+    <main class="preview preview--lake">
+      <div class="preview-toolbar">
+        <button type="button" id="rotate-right" class="icon-btn" title="Rotate right 15 degrees" aria-label="Rotate right 15 degrees">↺</button>
+        <button type="button" id="rotate-left" class="icon-btn" title="Rotate left 15 degrees" aria-label="Rotate left 15 degrees">↻</button>
+        <button type="button" id="zoom-out" class="icon-btn" title="Zoom out">−</button>
+        <button type="button" id="zoom-in" class="icon-btn" title="Zoom in">+</button>
+      </div>
+      <div class="poster-shell">
+        <div class="poster-frame lake-poster-frame" id="poster-frame">
+          <section class="lake-stage" id="lake-stage" aria-label="Lake preview">
+            <div class="lake-empty" id="lake-empty">Search and choose a lake to render its vector silhouette.</div>
+            <svg id="lake-stage-svg" class="lake-stage-svg" aria-hidden="true"></svg>
+          </section>
+          <div class="poster-labels lake-labels" id="poster-labels">
+            <h2 id="poster-city"></h2>
+            <p id="poster-country"></p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/lakeApp.js"></script>
+</body>
+</html>

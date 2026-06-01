@@ -4,170 +4,135 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Map Poster</title>
-  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&family=Roboto+Condensed:wght@400;500;700&display=swap" rel="stylesheet">
-  <link href="styles.css" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0e0e11;
+      --panel: rgba(20,20,24,0.92);
+      --panel-border: #2a2a30;
+      --text: #e8e6e3;
+      --muted: #9b9790;
+      --accent: #5b8def;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 28px;
+      display: grid;
+      place-items: center;
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(91,141,239,0.20), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(107,159,216,0.16), transparent 28%),
+        var(--bg);
+      color: var(--text);
+    }
+
+    .home {
+      width: min(1040px, 100%);
+      display: grid;
+      gap: 24px;
+    }
+
+    .hero {
+      padding: 12px 4px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(2.5rem, 6vw, 5.5rem);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+    }
+
+    .hero p {
+      margin: 14px 0 0;
+      max-width: 52ch;
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.6;
+    }
+
+    .options {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      display: block;
+      padding: 28px;
+      border-radius: 24px;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      color: inherit;
+      text-decoration: none;
+      box-shadow: 0 26px 60px rgba(0,0,0,0.28);
+      transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(91,141,239,0.55);
+      box-shadow: 0 32px 72px rgba(0,0,0,0.34);
+    }
+
+    .card-label {
+      display: inline-block;
+      margin-bottom: 18px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(91,141,239,0.12);
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .card h2 {
+      margin: 0;
+      font-size: clamp(1.5rem, 3vw, 2.5rem);
+      line-height: 1;
+    }
+
+    .card p {
+      margin: 14px 0 0;
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 34ch;
+    }
+
+    @media (max-width: 760px) {
+      body { padding: 20px; }
+      .options { grid-template-columns: 1fr; }
+      .card { padding: 22px; }
+    }
+  </style>
 </head>
 <body>
-  <div class="app">
-    <aside class="sidebar" id="sidebar">
-      <header class="sidebar-header">
-        <h1>Map Poster</h1>
-        <p class="sidebar-tagline">Design a custom map print for any place.</p>
-      </header>
+  <main class="home">
+    <section class="hero">
+      <h1>Map Poster Studio</h1>
+      <p>Choose a workspace to begin. The map designer is the current app. The lake search page is in place as a placeholder so we can build it next.</p>
+    </section>
 
-      <section class="location-panel">
-        <h2 class="location-heading">Location</h2>
-        <div class="search-wrap">
-          <input type="search" id="location-search" placeholder="Search city or region…" autocomplete="off">
-          <ul id="search-results" class="search-results" hidden></ul>
-        </div>
-      </section>
+    <section class="options" aria-label="Main options">
+      <a class="card" href="/map">
+        <span class="card-label">Current App</span>
+        <h2>Design Map</h2>
+        <p>Open the existing map designer and build a printable poster with themes, labels, POIs, compass, and PNG or SVG export.</p>
+      </a>
 
-      <nav class="accordion" id="sidebar-accordion" aria-label="Poster settings">
-        <section class="accordion-item" data-accordion-id="theme">
-          <button type="button" class="accordion-trigger" aria-expanded="false" aria-controls="panel-theme" id="trigger-theme">
-            <span class="accordion-label">Theme</span>
-            <span class="accordion-chevron" aria-hidden="true"></span>
-          </button>
-          <div class="accordion-panel" id="panel-theme" role="region" aria-labelledby="trigger-theme" hidden>
-            <div id="theme-grid" class="theme-grid"></div>
-          </div>
-        </section>
-
-        <section class="accordion-item" data-accordion-id="layers">
-          <button type="button" class="accordion-trigger" aria-expanded="false" aria-controls="panel-layers" id="trigger-layers">
-            <span class="accordion-label">Layers</span>
-            <span class="accordion-chevron" aria-hidden="true"></span>
-          </button>
-          <div class="accordion-panel" id="panel-layers" role="region" aria-labelledby="trigger-layers" hidden>
-            <div class="layer-list" id="layer-list"></div>
-          </div>
-        </section>
-
-        <section class="accordion-item" data-accordion-id="labels">
-          <button type="button" class="accordion-trigger" aria-expanded="false" aria-controls="panel-labels" id="trigger-labels">
-            <span class="accordion-label">Labels</span>
-            <span class="accordion-chevron" aria-hidden="true"></span>
-          </button>
-          <div class="accordion-panel" id="panel-labels" role="region" aria-labelledby="trigger-labels" hidden>
-            <label class="field">
-              <span>Title</span>
-              <input type="text" id="label-city" maxlength="80">
-            </label>
-            <label class="field">
-              <span>Subtitle</span>
-              <input type="text" id="label-country" maxlength="80">
-            </label>
-            <label class="field">
-              <span>Font</span>
-              <select id="label-font">
-                <option value="Playfair Display">Playfair Display</option>
-                <option value="Inter">Inter</option>
-                <option value="Roboto Condensed">Roboto Condensed</option>
-                <option value="Cormorant Garamond">Cormorant Garamond</option>
-              </select>
-            </label>
-          </div>
-        </section>
-
-        <section class="accordion-item" data-accordion-id="format">
-          <button type="button" class="accordion-trigger" aria-expanded="false" aria-controls="panel-format" id="trigger-format">
-            <span class="accordion-label">Format</span>
-            <span class="accordion-chevron" aria-hidden="true"></span>
-          </button>
-          <div class="accordion-panel" id="panel-format" role="region" aria-labelledby="trigger-format" hidden>
-            <label class="field">
-              <span>Size</span>
-              <select id="layout-select" class="layout-select"></select>
-            </label>
-            <label class="field">
-              <span>Orientation</span>
-              <select id="orientation-select" class="layout-select">
-                <option value="portrait">Portrait</option>
-                <option value="landscape">Landscape</option>
-              </select>
-            </label>
-          </div>
-        </section>
-
-        <section class="accordion-item" data-accordion-id="poi">
-          <button type="button" class="accordion-trigger" aria-expanded="false" aria-controls="panel-poi" id="trigger-poi">
-            <span class="accordion-label">Points of Interest</span>
-            <span class="accordion-chevron" aria-hidden="true"></span>
-          </button>
-          <div class="accordion-panel" id="panel-poi" role="region" aria-labelledby="trigger-poi" hidden>
-            <div class="poi-toolbar">
-              <button type="button" id="poi-add" class="poi-add-btn">+ Add POI</button>
-              <label class="poi-legend-toggle" title="Show a legend panel instead of individual callout labels">
-                <span>Legend</span>
-                <span class="poi-legend-switch">
-                  <input type="checkbox" id="poi-legend-mode">
-                  <span class="poi-legend-track"><span class="poi-legend-thumb"></span></span>
-                </span>
-              </label>
-            </div>
-            <ul class="poi-list" id="poi-list"></ul>
-          </div>
-        </section>
-      </nav>
-
-      <div class="export-actions">
-        <button type="button" id="export-png" class="btn-primary">Download PNG</button>
-        <button type="button" id="export-svg" class="btn-secondary">Download SVG</button>
-      </div>
-    </aside>
-
-    <main class="preview">
-      <div class="preview-toolbar">
-        <button type="button" id="rotate-right" class="icon-btn" title="Rotate right 15 degrees" aria-label="Rotate right 15 degrees">↺</button>
-        <button type="button" id="rotate-left" class="icon-btn" title="Rotate left 15 degrees" aria-label="Rotate left 15 degrees">↻</button>
-        <button type="button" id="zoom-out" class="icon-btn" title="Zoom out">−</button>
-        <button type="button" id="zoom-in" class="icon-btn" title="Zoom in">+</button>
-      </div>
-      <div class="poster-shell">
-        <div class="poster-frame" id="poster-frame">
-          <div id="map" class="poster-map"></div>
-          <div class="poster-debug" id="poster-debug" aria-live="polite"></div>
-          <div class="poster-compass" id="poster-compass" aria-hidden="true">
-            <svg viewBox="0 0 100 100" class="poster-compass-svg" role="presentation">
-              <circle cx="50" cy="50" r="38" class="poster-compass-disc" />
-              <circle cx="50" cy="50" r="36" class="poster-compass-ring" />
-              <g class="poster-compass-rose" id="poster-compass-rose">
-                <path d="M50 16 L61 50 L50 42 L39 50 Z" class="poster-compass-north" />
-                <path d="M50 84 L61 50 L50 58 L39 50 Z" class="poster-compass-south" />
-                <circle cx="50" cy="50" r="4" class="poster-compass-center" />
-              </g>
-            </svg>
-          </div>
-          <div class="poster-labels" id="poster-labels">
-            <h2 id="poster-city"></h2>
-            <p id="poster-country"></p>
-          </div>
-          <!-- POI overlays rendered here -->
-          <div id="poi-overlay" class="poi-overlay" aria-hidden="true"></div>
-          <!-- POI legend panel (legend mode) -->
-          <div id="poi-legend" class="poi-legend" hidden></div>
-        </div>
-      </div>
-    </main>
-  </div>
-
-  <!-- POI name dialog -->
-  <dialog id="poi-dialog" class="poi-dialog">
-    <form method="dialog" class="poi-dialog-form">
-      <label class="poi-dialog-label" for="poi-name-input">Name this point</label>
-      <input type="text" id="poi-name-input" class="poi-dialog-input" maxlength="60" placeholder="e.g. My Cabin" autocomplete="off">
-      <div class="poi-dialog-actions">
-        <button type="button" id="poi-dialog-cancel" class="poi-dialog-btn poi-dialog-btn--ghost">Cancel</button>
-        <button type="submit" id="poi-dialog-confirm" class="poi-dialog-btn poi-dialog-btn--primary">Add</button>
-      </div>
-    </form>
-  </dialog>
-
-  <script src="https://kit.fontawesome.com/34941efc24.js" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-  <script src="mapStyle.js"></script>
-  <script src="app.js"></script>
+      <a class="card" href="/lake">
+        <span class="card-label">Lake App</span>
+        <h2>Lake Designer</h2>
+        <p>Search for a lake and build a clean vector-based poster with a fixed portrait layout and centered bottom labels.</p>
+      </a>
+    </section>
+  </main>
 </body>
 </html>

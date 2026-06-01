@@ -58,6 +58,22 @@ body {
   letter-spacing: -0.02em;
 }
 
+.sidebar-home-link {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 10px;
+  color: var(--sidebar-muted);
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: color 160ms ease;
+}
+
+.sidebar-home-link:hover {
+  color: #fff;
+}
+
 .sidebar-tagline {
   margin: 6px 0 0;
   font-size: 0.82rem;
@@ -428,7 +444,7 @@ select:focus {
   position: absolute;
   top: 18px;
   right: 18px;
-  width: clamp(54px, 10%, 84px);
+  width: clamp(81px, 15%, 126px);
   aspect-ratio: 1;
   z-index: 2;
   pointer-events: none;
@@ -513,6 +529,69 @@ select:focus {
   font-weight: 500;
   opacity: 0.85;
   letter-spacing: 0.04em;
+}
+
+.preview--lake {
+  padding-top: 32px;
+}
+
+.lake-poster-frame {
+  aspect-ratio: 24 / 36;
+}
+
+.lake-stage {
+  position: relative;
+  flex: 0 0 75%;
+  min-height: 0;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.lake-stage.is-dragging {
+  cursor: grabbing;
+}
+
+.lake-stage-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.lake-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  text-align: center;
+  color: color-mix(in srgb, var(--poster-text) 58%, transparent);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+}
+
+.lake-empty[hidden] {
+  display: none;
+}
+
+.lake-labels {
+  flex: 0 0 25%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 20px 26px;
+}
+
+.lake-labels h2 {
+  font-size: clamp(1.35rem, 3vw, 2.2rem);
+}
+
+.lake-labels p {
+  font-size: clamp(0.82rem, 1.6vw, 1.08rem);
 }
 
 @media (max-width: 768px) {
