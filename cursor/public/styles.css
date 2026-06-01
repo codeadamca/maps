@@ -58,15 +58,22 @@ body {
   letter-spacing: -0.02em;
 }
 
-.sidebar-home-link {
-  display: inline-flex;
+.sidebar-breadcrumb {
+  display: flex;
   align-items: center;
+  gap: 0.35rem;
   margin-bottom: 10px;
   color: var(--sidebar-muted);
-  text-decoration: none;
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.02em;
+}
+
+.sidebar-home-link {
+  display: inline-flex;
+  align-items: center;
+  color: #7f90b4;
+  text-decoration: none;
   transition: color 160ms ease;
 }
 
@@ -592,6 +599,12 @@ select:focus {
 
 .lake-labels p {
   font-size: clamp(0.82rem, 1.6vw, 1.08rem);
+}
+
+.lake-labels .poster-coordinates {
+  font-size: clamp(0.72rem, 1.35vw, 0.95rem);
+  opacity: 0.72;
+  letter-spacing: 0.06em;
 }
 
 @media (max-width: 768px) {

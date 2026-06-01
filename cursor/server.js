@@ -98,6 +98,8 @@ function formatLakeResult(item) {
     name,
     region,
     country: item.address?.country || '',
+    lat: Number(item.lat),
+    lon: Number(item.lon),
     osmType: item.osm_type || '',
     osmId: String(item.osm_id || '')
   };

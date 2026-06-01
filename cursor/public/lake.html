@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lake Designer</title>
+  <title>Lake Search | LakeLines Co.</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&family=Roboto+Condensed:wght@400;500;700&display=swap" rel="stylesheet">
   <link href="/styles.css" rel="stylesheet">
 </head>
@@ -11,9 +11,12 @@
   <div class="app">
     <aside class="sidebar" id="sidebar">
       <header class="sidebar-header">
-        <a href="/" class="sidebar-home-link">Home</a>
-        <h1>Lake Designer</h1>
-        <p class="sidebar-tagline">Search for a lake and generate a clean vector poster with fixed portrait layout.</p>
+        <div class="sidebar-breadcrumb">
+          <a href="/" class="sidebar-home-link">Home</a>
+          <span>/</span>
+          <span>Lake Search</span>
+        </div>
+        <h1>Lake Search</h1>
       </header>
 
       <section class="location-panel">
@@ -50,6 +53,10 @@
               <input type="text" id="label-country" maxlength="80">
             </label>
             <label class="field">
+              <span>Coordinates</span>
+              <input type="text" id="label-coordinates" maxlength="80">
+            </label>
+            <label class="field">
               <span>Font</span>
               <select id="label-font">
                 <option value="Playfair Display">Playfair Display</option>
@@ -84,6 +91,7 @@
           <div class="poster-labels lake-labels" id="poster-labels">
             <h2 id="poster-city"></h2>
             <p id="poster-country"></p>
+            <p id="poster-coordinates" class="poster-coordinates"></p>
           </div>
         </div>
       </div>

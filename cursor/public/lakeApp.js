@@ -36,6 +36,7 @@ const state = {
   themeId: 'coral',
   city: 'Whitestone Lake',
   country: 'Ontario, Canada',
+  coordinates: null,
   fontFamily: 'Playfair Display',
   zoom: DEFAULT_LAKE_ZOOM,
   bearing: DEFAULT_LAKE_BEARING,
@@ -59,11 +60,13 @@ const locationSearch = document.getElementById('location-search');
 const searchResults = document.getElementById('search-results');
 const labelCity = document.getElementById('label-city');
 const labelCountry = document.getElementById('label-country');
+const labelCoordinates = document.getElementById('label-coordinates');
 const labelFont = document.getElementById('label-font');
 const posterFrame = document.getElementById('poster-frame');
 const posterLabels = document.getElementById('poster-labels');
 const posterCity = document.getElementById('poster-city');
 const posterCountry = document.getElementById('poster-country');
+const posterCoordinates = document.getElementById('poster-coordinates');
 const lakeStage = document.getElementById('lake-stage');
 const lakeStageSvg = document.getElementById('lake-stage-svg');
 const lakeEmpty = document.getElementById('lake-empty');
@@ -84,6 +87,8 @@ function isSavedLakeSelection(value) {
     && typeof value.country === 'string'
     && typeof value.osmType === 'string'
     && typeof value.osmId === 'string'
+    && (value.lat === undefined || Number.isFinite(Number(value.lat)))
+    && (value.lon === undefined || Number.isFinite(Number(value.lon)))
   );
 }
 
@@ -96,7 +101,9 @@ function getSelectedLakeSnapshot(lake) {
     region: String(lake.region || ''),
     country: String(lake.country || ''),
     osmType: String(lake.osmType || ''),
-    osmId: String(lake.osmId || '')
+    osmId: String(lake.osmId || ''),
+    lat: Number.isFinite(Number(lake.lat)) ? Number(lake.lat) : undefined,
+    lon: Number.isFinite(Number(lake.lon)) ? Number(lake.lon) : undefined
   };
 }
 
@@ -108,6 +115,7 @@ function loadViewState() {
     if (typeof saved.themeId === 'string') state.themeId = saved.themeId;
     if (typeof saved.city === 'string') state.city = saved.city;
     if (typeof saved.country === 'string') state.country = saved.country;
+    if (typeof saved.coordinates === 'string') state.coordinates = saved.coordinates;
     if (typeof saved.fontFamily === 'string') state.fontFamily = saved.fontFamily;
     if (Number.isFinite(Number(saved.zoom))) state.zoom = Number(saved.zoom);
     if (Number.isFinite(Number(saved.bearing))) state.bearing = Number(saved.bearing);
@@ -124,6 +132,7 @@ function saveViewState() {
     themeId: state.themeId,
     city: state.city,
     country: state.country,
+    coordinates: state.coordinates,
     fontFamily: state.fontFamily,
     zoom: state.zoom,
     bearing: state.bearing,
@@ -346,8 +355,10 @@ function applyThemeUi() {
 function applyLabels() {
   posterCity.textContent = state.city;
   posterCountry.textContent = state.country;
+  posterCoordinates.textContent = state.coordinates || '';
   labelCity.value = state.city;
   labelCountry.value = state.country;
+  labelCoordinates.value = state.coordinates || '';
   labelFont.value = state.fontFamily;
 }
 
@@ -363,20 +374,28 @@ function getPosterMetrics() {
   const exportScale = Math.max(exportScaleX, exportScaleY);
   const previewTitleSize = posterCity ? parseFloat(getComputedStyle(posterCity).fontSize) : NaN;
   const previewSubtitleSize = posterCountry ? parseFloat(getComputedStyle(posterCountry).fontSize) : NaN;
+  const previewCoordinatesSize = posterCoordinates ? parseFloat(getComputedStyle(posterCoordinates).fontSize) : NaN;
   const posterCityRect = posterCity ? posterCity.getBoundingClientRect() : null;
   const posterCountryRect = posterCountry ? posterCountry.getBoundingClientRect() : null;
+  const posterCoordinatesRect = posterCoordinates ? posterCoordinates.getBoundingClientRect() : null;
   const titleSize = Number.isFinite(previewTitleSize)
     ? Math.round(previewTitleSize * exportScale * EXPORT_TEXT_SCALE_ADJUSTMENT)
     : Math.round(width * 0.06);
   const subtitleSize = Number.isFinite(previewSubtitleSize)
     ? Math.round(previewSubtitleSize * exportScale * EXPORT_TEXT_SCALE_ADJUSTMENT)
     : Math.round(width * 0.03);
+  const coordinatesSize = Number.isFinite(previewCoordinatesSize)
+    ? Math.round(previewCoordinatesSize * exportScale * EXPORT_TEXT_SCALE_ADJUSTMENT)
+    : Math.round(width * 0.024);
   const titleY = posterFrameRect && posterCityRect
     ? Math.round((posterCityRect.top - posterFrameRect.top + posterCityRect.height / 2) * exportScale)
     : Math.round(artHeight + labelBand * 0.42);
   const subtitleY = posterFrameRect && posterCountryRect
     ? Math.round((posterCountryRect.top - posterFrameRect.top + posterCountryRect.height / 2) * exportScale)
-    : Math.round(artHeight + labelBand * 0.66);
+    : Math.round(artHeight + labelBand * 0.62);
+  const coordinatesY = posterFrameRect && posterCoordinatesRect
+    ? Math.round((posterCoordinatesRect.top - posterFrameRect.top + posterCoordinatesRect.height / 2) * exportScale)
+    : Math.round(artHeight + labelBand * 0.8);
 
   return {
     width,
@@ -385,8 +404,10 @@ function getPosterMetrics() {
     artHeight,
     titleSize,
     subtitleSize,
+    coordinatesSize,
     titleY,
-    subtitleY
+    subtitleY,
+    coordinatesY
   };
 }
 
@@ -468,6 +489,14 @@ function getLakeSubtitle(result) {
   return result.region || result.country || state.country;
 }
 
+function formatLakeCoordinates(result) {
+  const lon = Number(result?.lon);
+  const lat = Number(result?.lat);
+
+  if (!Number.isFinite(lon) || !Number.isFinite(lat)) return '';
+  return `${lon.toFixed(5)}, ${lat.toFixed(5)}`;
+}
+
 function setLakeEmptyMessage(message) {
   lakeEmpty.textContent = message;
   lakeEmpty.hidden = false;
@@ -490,6 +519,7 @@ async function selectLake(result) {
   state.selectedLake = null;
   state.city = getLakeTitle(result);
   state.country = getLakeSubtitle(result);
+  state.coordinates = formatLakeCoordinates(result);
   if (previousLakeKey !== nextLakeKey) {
     state.panX = 0;
     state.panY = 0;
@@ -506,6 +536,8 @@ async function selectLake(result) {
     if (requestId !== activeLakeRequestId) return;
 
     state.selectedLake = detailedLake;
+    state.coordinates = formatLakeCoordinates(detailedLake) || state.coordinates;
+    applyLabels();
     renderLakePreview();
     saveViewState();
   } catch (error) {
@@ -791,7 +823,7 @@ async function exportPng() {
     await waitForCanvasTextFonts(state.fontFamily);
 
     const theme = getTheme();
-    const { width, height, artHeight, titleSize, subtitleSize, titleY, subtitleY } = getPosterMetrics();
+    const { width, height, artHeight, titleSize, subtitleSize, coordinatesSize, titleY, subtitleY, coordinatesY } = getPosterMetrics();
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -808,6 +840,12 @@ async function exportPng() {
     ctx.fillText(state.city, width / 2, titleY);
     ctx.font = `500 ${subtitleSize}px "${state.fontFamily}", sans-serif`;
     ctx.fillText(state.country, width / 2, subtitleY);
+    if (state.coordinates) {
+      ctx.globalAlpha = 0.72;
+      ctx.font = `500 ${coordinatesSize}px "${state.fontFamily}", sans-serif`;
+      ctx.fillText(state.coordinates, width / 2, coordinatesY);
+      ctx.globalAlpha = 1;
+    }
 
     const blob = await new Promise((resolve, reject) => {
       canvas.toBlob(result => {
@@ -829,7 +867,7 @@ async function exportSvg() {
 
   try {
     const theme = getTheme();
-    const { width, height, artHeight, titleSize, subtitleSize, titleY, subtitleY } = getPosterMetrics();
+    const { width, height, artHeight, titleSize, subtitleSize, coordinatesSize, titleY, subtitleY, coordinatesY } = getPosterMetrics();
     const svgSize = getSvgDocumentSize();
     const fontConfig = getSvgFontConfig(state.fontFamily);
     const subtitleFontWeight = pickClosestFontWeight(fontConfig.weights, 500);
@@ -849,6 +887,9 @@ async function exportSvg() {
       buildLakeSvg(width, artHeight),
       `  <text x="${Math.round(width / 2)}" y="${titleY}" text-anchor="middle" dominant-baseline="middle" fill="${escapeXml(theme.ui.text)}" font-family="${escapeXml(fontConfig.family)}, sans-serif" font-size="${titleSize}" font-weight="700">${escapeXml(state.city)}</text>`,
       `  <text x="${Math.round(width / 2)}" y="${subtitleY}" text-anchor="middle" dominant-baseline="middle" fill="${escapeXml(theme.ui.text)}" fill-opacity="0.85" font-family="${escapeXml(fontConfig.family)}, sans-serif" font-size="${subtitleSize}" font-weight="${subtitleFontWeight}">${escapeXml(state.country)}</text>`,
+      state.coordinates
+        ? `  <text x="${Math.round(width / 2)}" y="${coordinatesY}" text-anchor="middle" dominant-baseline="middle" fill="${escapeXml(theme.ui.text)}" fill-opacity="0.72" font-family="${escapeXml(fontConfig.family)}, sans-serif" font-size="${coordinatesSize}" font-weight="${subtitleFontWeight}">${escapeXml(state.coordinates)}</text>`
+        : '',
       '</svg>'
     ].filter(Boolean).join('\n');
 
@@ -864,6 +905,11 @@ async function init() {
   loadViewState();
   initAccordion();
 
+  const savedCity = state.city;
+  const savedCountry = state.country;
+  const savedCoordinates = state.coordinates;
+  const hasSavedCoordinates = typeof state.coordinates === 'string';
+
   const themeResponse = await fetch('/themes.json');
   themesData = await themeResponse.json();
 
@@ -875,6 +921,11 @@ async function init() {
   if (state.selectedLake) {
     locationSearch.value = state.selectedLake.label;
     await selectLake(state.selectedLake);
+    state.city = savedCity;
+    state.country = savedCountry;
+    if (hasSavedCoordinates) state.coordinates = savedCoordinates;
+    applyLabels();
+    saveViewState();
   }
 }
 
@@ -914,6 +965,12 @@ labelCity.addEventListener('input', () => {
 
 labelCountry.addEventListener('input', () => {
   state.country = labelCountry.value;
+  applyLabels();
+  saveViewState();
+});
+
+labelCoordinates.addEventListener('input', () => {
+  state.coordinates = labelCoordinates.value;
   applyLabels();
   saveViewState();
 });
