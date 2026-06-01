@@ -249,13 +249,55 @@ select:focus {
 .layer-toggle {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   font-size: 0.88rem;
   cursor: pointer;
 }
 
-.layer-toggle input {
-  accent-color: var(--accent);
+/* Switch track + thumb (mirrors poi-legend-switch) */
+.layer-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.layer-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.layer-track {
+  display: inline-block;
+  width: 34px;
+  height: 18px;
+  background: #3a3a44;
+  border-radius: 9px;
+  transition: background 180ms;
+  position: relative;
+}
+
+.layer-switch input:checked ~ .layer-track {
+  background: var(--accent);
+}
+
+.layer-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 180ms;
+}
+
+.layer-switch input:checked ~ .layer-track .layer-thumb {
+  transform: translateX(16px);
 }
 
 .field {
@@ -489,4 +531,419 @@ select:focus {
   .poster-frame {
     width: min(92vw, 100%);
   }
+}
+
+/* ── Points of Interest ──────────────────────────────────────────────────────── */
+
+.poi-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.poi-add-btn {
+  flex: 1;
+  border: 1px dashed var(--accent);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.poi-add-btn:hover,
+.poi-add-btn.is-active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.poi-legend-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--sidebar-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Switch track + thumb */
+.poi-legend-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.poi-legend-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.poi-legend-track {
+  display: inline-block;
+  width: 34px;
+  height: 18px;
+  background: #3a3a44;
+  border-radius: 9px;
+  transition: background 180ms;
+  position: relative;
+}
+
+.poi-legend-switch input:checked ~ .poi-legend-track {
+  background: var(--accent);
+}
+
+.poi-legend-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 180ms;
+}
+
+.poi-legend-switch input:checked ~ .poi-legend-track .poi-legend-thumb {
+  transform: translateX(16px);
+}
+
+.poi-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.poi-list-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px;
+  border-radius: 7px;
+  background: #1c1c22;
+}
+
+.poi-icon-btn {
+  border: none;
+  background: transparent;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: background 120ms;
+  color: #fff;
+}
+
+.poi-icon-btn:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.poi-item-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.poi-delete-btn {
+  border: none;
+  background: transparent;
+  color: var(--sidebar-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 120ms, background 120ms;
+  flex-shrink: 0;
+}
+
+.poi-delete-btn:hover {
+  color: #f06060;
+  background: rgba(240, 96, 96, 0.12);
+}
+
+/* ── POI on-poster overlays ──────────────────────────────────────────────────── */
+
+.poi-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none; /* children opt-in via pointer-events: auto */
+  z-index: 3;
+}
+
+/* Tiny icon pin (legend mode) */
+.poi-pin {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  filter: drop-shadow(0 3px 7px rgba(0,0,0,0.45));
+  padding-bottom: 11px; /* leaves room for the pointer triangle */
+}
+
+/* The pointed triangle tail, rendered as a CSS border trick */
+.poi-pin::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 11px solid transparent;
+  border-right: 11px solid transparent;
+  border-top: 13px solid var(--poster-text);
+}
+
+/* Circular pin body filled with theme colour */
+.poi-pin-body {
+  position: relative;
+  z-index: 1;
+  width: 36px;
+  height: 36px;
+  background: var(--poster-text);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: -4px; /* overlap the triangle so they read as one shape */
+}
+
+/* White inner circle containing the icon */
+.poi-pin-circle {
+  width: 22px;
+  height: 22px;
+  background: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--poster-text);
+  line-height: 1;
+}
+
+/* SVG layer for connector lines between anchor dots and draggable label boxes */
+.poi-line-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* Filled triangle tail pointing from box bottom to anchor */
+.poi-tail {
+  fill: var(--poster-text);
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
+}
+
+/* Anchor dot at the geo location, coloured to match box */
+.poi-callout-dot {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--poster-text);
+  border: 2px solid var(--poster-bg);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* Draggable label box — bottom-centre sits at the label position */
+.poi-callout-box {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--poster-text);
+  color: var(--poster-bg);
+  border-radius: 2px;
+  padding: 8px 10px 8px 6px;
+  font-size: clamp(0.6rem, 1.2vw, 0.78rem);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.35);
+  white-space: nowrap;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1;
+  transform: translate(-50%, -100%);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  pointer-events: auto;
+}
+
+.poi-callout-box:hover {
+  filter: brightness(1.08);
+}
+
+.poi-callout-box.is-dragging {
+  cursor: grabbing;
+  filter: brightness(1.12);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+}
+
+.poi-callout-icon {
+  font-size: 1em;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.poi-callout-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── POI legend panel (legend mode) ─────────────────────────────────────────── */
+
+.poi-legend {
+  position: absolute;
+  background: var(--poster-text);
+  color: var(--poster-bg);
+  border-radius: 2px;
+  padding: 8px 10px 8px 6px;
+  z-index: 4;
+  font-size: clamp(0.6rem, 1.2vw, 0.78rem);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.35);
+  pointer-events: auto;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 40%;
+}
+
+.poi-legend.is-dragging {
+  cursor: grabbing;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+}
+
+.poi-legend[hidden] {
+  display: none;
+}
+
+.poi-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.poi-legend-icon {
+  font-size: 1em;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.poi-legend-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── POI name dialog ─────────────────────────────────────────────────────────── */
+
+.poi-dialog {
+  border: 1px solid var(--sidebar-border);
+  border-radius: 14px;
+  background: #1c1c22;
+  color: var(--sidebar-text);
+  padding: 24px;
+  width: min(340px, 90vw);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+
+.poi-dialog::backdrop {
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(3px);
+}
+
+.poi-dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.poi-dialog-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.poi-dialog-input {
+  width: 100%;
+  border: 1px solid var(--sidebar-border);
+  background: #141418;
+  color: var(--sidebar-text);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: inherit;
+}
+
+.poi-dialog-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.poi-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.poi-dialog-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 9px 18px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.poi-dialog-btn--ghost {
+  background: transparent;
+  color: var(--sidebar-muted);
+  border: 1px solid var(--sidebar-border);
+}
+
+.poi-dialog-btn--ghost:hover {
+  color: var(--sidebar-text);
+}
+
+.poi-dialog-btn--primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.poi-dialog-btn--primary:hover {
+  filter: brightness(1.1);
 }

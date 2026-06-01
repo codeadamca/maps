@@ -90,6 +90,26 @@
             </label>
           </div>
         </section>
+
+        <section class="accordion-item" data-accordion-id="poi">
+          <button type="button" class="accordion-trigger" aria-expanded="false" aria-controls="panel-poi" id="trigger-poi">
+            <span class="accordion-label">Points of Interest</span>
+            <span class="accordion-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-panel" id="panel-poi" role="region" aria-labelledby="trigger-poi" hidden>
+            <div class="poi-toolbar">
+              <button type="button" id="poi-add" class="poi-add-btn">+ Add POI</button>
+              <label class="poi-legend-toggle" title="Show a legend panel instead of individual callout labels">
+                <span>Legend</span>
+                <span class="poi-legend-switch">
+                  <input type="checkbox" id="poi-legend-mode">
+                  <span class="poi-legend-track"><span class="poi-legend-thumb"></span></span>
+                </span>
+              </label>
+            </div>
+            <ul class="poi-list" id="poi-list"></ul>
+          </div>
+        </section>
       </nav>
 
       <div class="export-actions">
@@ -124,11 +144,28 @@
             <h2 id="poster-city"></h2>
             <p id="poster-country"></p>
           </div>
+          <!-- POI overlays rendered here -->
+          <div id="poi-overlay" class="poi-overlay" aria-hidden="true"></div>
+          <!-- POI legend panel (legend mode) -->
+          <div id="poi-legend" class="poi-legend" hidden></div>
         </div>
       </div>
     </main>
   </div>
 
+  <!-- POI name dialog -->
+  <dialog id="poi-dialog" class="poi-dialog">
+    <form method="dialog" class="poi-dialog-form">
+      <label class="poi-dialog-label" for="poi-name-input">Name this point</label>
+      <input type="text" id="poi-name-input" class="poi-dialog-input" maxlength="60" placeholder="e.g. My Cabin" autocomplete="off">
+      <div class="poi-dialog-actions">
+        <button type="button" id="poi-dialog-cancel" class="poi-dialog-btn poi-dialog-btn--ghost">Cancel</button>
+        <button type="submit" id="poi-dialog-confirm" class="poi-dialog-btn poi-dialog-btn--primary">Add</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="https://kit.fontawesome.com/34941efc24.js" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script src="mapStyle.js"></script>
   <script src="app.js"></script>

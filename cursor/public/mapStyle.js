@@ -480,6 +480,31 @@ function generateMapStyle(theme, options = {}) {
       },
 
       {
+        id: "road-path-overview",
+        source: provider.sourceId,
+        "source-layer": provider.layers.transportation,
+        type: "line",
+        minzoom: ROAD_PATH_OVERVIEW_MIN_ZOOM,
+        maxzoom: ROAD_OVERVIEW_MAX_ZOOM,
+        filter: lineClassFilter(roadPathClasses),
+        paint: {
+          "line-color": roadPathColor,
+          "line-width": widthExpr(roadPathOverviewWidthStops),
+          "line-opacity": includeRoadPath
+            ? opacityExpr([
+                [5, 0.45],
+                [9, 0.58],
+                [12, 0],
+              ])
+            : 0,
+        },
+        layout: {
+          visibility: includeRoads ? ("visible" ) : ("none" ),
+          "line-cap": "round" ,
+          "line-join": "round" ,
+        },
+      },
+      {
         id: "road-minor-overview-low",
         source: provider.sourceId,
         "source-layer": provider.layers.transportation,
@@ -550,32 +575,6 @@ function generateMapStyle(theme, options = {}) {
           "line-join": "round" ,
         },
       },
-      {
-        id: "road-path-overview",
-        source: provider.sourceId,
-        "source-layer": provider.layers.transportation,
-        type: "line",
-        minzoom: ROAD_PATH_OVERVIEW_MIN_ZOOM,
-        maxzoom: ROAD_OVERVIEW_MAX_ZOOM,
-        filter: lineClassFilter(roadPathClasses),
-        paint: {
-          "line-color": roadPathColor,
-          "line-width": widthExpr(roadPathOverviewWidthStops),
-          "line-opacity": includeRoadPath
-            ? opacityExpr([
-                [5, 0.45],
-                [9, 0.58],
-                [12, 0],
-              ])
-            : 0,
-        },
-        layout: {
-          visibility: includeRoads ? ("visible" ) : ("none" ),
-          "line-cap": "round" ,
-          "line-join": "round" ,
-        },
-      },
-
       {
         id: "road-path-casing",
         source: provider.sourceId,
@@ -667,6 +666,30 @@ function generateMapStyle(theme, options = {}) {
       },
 
       {
+        id: "road-path",
+        source: provider.sourceId,
+        "source-layer": provider.layers.transportation,
+        type: "line",
+        minzoom: ROAD_PATH_DETAIL_MIN_ZOOM,
+        filter: lineClassFilter(roadPathClasses),
+        paint: {
+          "line-color": roadPathColor,
+          "line-width": widthExpr(roadPathDetailWidthStops),
+          "line-opacity": includeRoadPath
+            ? opacityExpr([
+                [8, 0.7],
+                [12, 0.82],
+                [18, 0.95],
+              ])
+            : 0,
+        },
+        layout: {
+          visibility: includeRoads ? ("visible" ) : ("none" ),
+          "line-cap": "round" ,
+          "line-join": "round" ,
+        },
+      },
+      {
         id: "road-minor-low",
         source: provider.sourceId,
         "source-layer": provider.layers.transportation,
@@ -727,30 +750,6 @@ function generateMapStyle(theme, options = {}) {
             [10, 0.92],
             [18, 1],
           ]),
-        },
-        layout: {
-          visibility: includeRoads ? ("visible" ) : ("none" ),
-          "line-cap": "round" ,
-          "line-join": "round" ,
-        },
-      },
-      {
-        id: "road-path",
-        source: provider.sourceId,
-        "source-layer": provider.layers.transportation,
-        type: "line",
-        minzoom: ROAD_PATH_DETAIL_MIN_ZOOM,
-        filter: lineClassFilter(roadPathClasses),
-        paint: {
-          "line-color": roadPathColor,
-          "line-width": widthExpr(roadPathDetailWidthStops),
-          "line-opacity": includeRoadPath
-            ? opacityExpr([
-                [8, 0.7],
-                [12, 0.82],
-                [18, 0.95],
-              ])
-            : 0,
         },
         layout: {
           visibility: includeRoads ? ("visible" ) : ("none" ),
