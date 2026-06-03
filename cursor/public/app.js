@@ -1,6 +1,6 @@
 // Center set to Manicouagan Reservoir (Quebec, Canada)
-const DEFAULT_CENTER = [-68.736017, 51.429512];
-const DEFAULT_ZOOM = 9.5;
+const DEFAULT_CENTER = [-68.703754, 51.417865];
+const DEFAULT_ZOOM = 8.5;
 const MAPBOX_BUILDING_FOCUS_ZOOM = 16;
 const VIEW_STATE_KEY = 'map-poster:view';
 const EXPORT_DPI = 96;
@@ -216,7 +216,6 @@ let poiList = [];          // [{ id, name, iconIdx, lng, lat }]
 let poiLegendMode = false; // true = show legend; false = show callout labels
 let poiPickerActive = false;
 let poiIdCounter = 0;
-let poiLegendPos = null;  // {x, y} as % from top-left, null = use default (bottom-right)
 
 const poiAddBtn      = document.getElementById('poi-add');
 const poiLegendCheck = document.getElementById('poi-legend-mode');
@@ -279,9 +278,7 @@ function loadViewState() {
     if (typeof saved.poiLegendMode === 'boolean') {
       poiLegendMode = saved.poiLegendMode;
       poiLegendCheck.checked = poiLegendMode;
-    }
-    if (saved.poiLegendPos && typeof saved.poiLegendPos.x === 'number') {
-      poiLegendPos = saved.poiLegendPos;
+      poiOverlay.classList.toggle('legend-mode', poiLegendMode);
     }
   } catch (error) {
     // Ignore invalid storage.
@@ -303,8 +300,7 @@ function saveViewState() {
     layers: state.layers,
     pois: poiList,
     poiLegendMode,
-    poiIdCounter,
-    poiLegendPos
+    poiIdCounter
   }));
 }
 
@@ -342,6 +338,25 @@ function getLayoutDimensions() {
 
 function getExportDimensions() {
   const layout = getLayoutDimensions();
+  
+  if (layout.unit === 'ratio') {
+    // For aspect ratio, use a fixed export width and calculate height from ratio
+    const EXPORT_WIDTH = 1200;
+    const rawWidth = EXPORT_WIDTH;
+    const rawHeight = Math.round(EXPORT_WIDTH * (layout.height / layout.width));
+    const largestDimension = Math.max(rawWidth, rawHeight);
+    
+    if (largestDimension <= MAX_EXPORT_DIMENSION) {
+      return { width: rawWidth, height: rawHeight };
+    }
+    
+    const scale = MAX_EXPORT_DIMENSION / largestDimension;
+    return {
+      width: Math.round(rawWidth * scale),
+      height: Math.round(rawHeight * scale)
+    };
+  }
+  
   if (layout.unit === 'px') {
     const largestDimension = Math.max(layout.width, layout.height);
     if (largestDimension <= MAX_EXPORT_DIMENSION) {
@@ -354,6 +369,7 @@ function getExportDimensions() {
       height: Math.round(layout.height * scale)
     };
   }
+  
   const rawWidth = Math.round((layout.width / 2.54) * EXPORT_DPI);
   const rawHeight = Math.round((layout.height / 2.54) * EXPORT_DPI);
   const largestDimension = Math.max(rawWidth, rawHeight);
@@ -370,6 +386,16 @@ function getExportDimensions() {
 
 function getSvgDocumentSize() {
   const layout = getLayoutDimensions();
+
+  if (layout.unit === 'ratio') {
+    const BASE_WIDTH = 600; // Base width in pixels for ratio-based layouts
+    const width = BASE_WIDTH;
+    const height = Math.round(BASE_WIDTH * (layout.height / layout.width));
+    return {
+      width: `${width}px`,
+      height: `${height}px`
+    };
+  }
 
   if (layout.unit === 'px') {
     return {
@@ -418,8 +444,19 @@ function updateDocumentScale() {
   
   // Get document dimensions from current layout
   const layout = getLayoutDimensions();
-  const docWidth = Math.round((layout.width / 2.54) * EXPORT_DPI);
-  const docHeight = Math.round((layout.height / 2.54) * EXPORT_DPI);
+  
+  let docWidth, docHeight;
+  
+  if (layout.unit === 'ratio') {
+    // For aspect ratio, use a base width and calculate height from ratio
+    const BASE_WIDTH = 600; // Base width in pixels for ratio-based layouts
+    docWidth = BASE_WIDTH;
+    docHeight = Math.round(BASE_WIDTH * (layout.height / layout.width));
+  } else {
+    // For cm or other units, convert to pixels
+    docWidth = Math.round((layout.width / 2.54) * EXPORT_DPI);
+    docHeight = Math.round((layout.height / 2.54) * EXPORT_DPI);
+  }
   
   // Set CSS variables for document size
   previewContainer.style.setProperty('--doc-width', `${docWidth}px`);
@@ -452,6 +489,38 @@ function setupDocumentScaleObserver() {
   updateDocumentScale();
 }
 
+function updatePositioningMetrics() {
+  if (!posterFrame) return;
+  
+  const layout = getLayout(); // Get the layout with minWidth, minHeight
+  if (layout.unit !== 'ratio' || !layout.minWidth || !layout.minHeight) {
+    return; // Only for ratio-based layouts with min dimensions
+  }
+  
+  // Calculate positioning as percentages of poster dimensions
+  // All dimensions are based on the minimum reference dimensions
+  
+  // White label area: 1.5 inches high
+  const labelBandHeight = (1.5 / layout.minHeight) * 100;
+  
+  // Legend: 0.25 inches from right and 0.25 inches above white label area
+  const legendRight = (0.25 / layout.minWidth) * 100;
+  const legendBottom = ((1.5 + 0.25) / layout.minHeight) * 100;
+  
+  // Compass: 1.875 inch diameter (increased by 50%), positioned 0.25 inches from top and right
+  const compassSize = (1.875 / layout.minHeight) * 100;  // 1.875" diameter
+  const compassTop = (0.25 / layout.minHeight) * 100;
+  const compassRight = (0.25 / layout.minWidth) * 100;
+  
+  // Set CSS variables for use in positioning
+  posterFrame.style.setProperty('--label-band-height', `${labelBandHeight}%`);
+  posterFrame.style.setProperty('--legend-right', `${legendRight}%`);
+  posterFrame.style.setProperty('--legend-bottom', `${legendBottom}%`);
+  posterFrame.style.setProperty('--compass-size', `${compassSize}%`);
+  posterFrame.style.setProperty('--compass-top', `${compassTop}%`);
+  posterFrame.style.setProperty('--compass-right', `${compassRight}%`);
+}
+
 function applyPosterAspect() {
   const layout = getLayoutDimensions();
   posterFrame.style.setProperty('--poster-aspect', `${layout.width} / ${layout.height}`);
@@ -462,6 +531,8 @@ function updatePosterLayout() {
   // Recalculate document scale (updates CSS vars) so layout/orientation
   // changes take effect immediately in the preview without a reload.
   updateDocumentScale();
+  // Update positioning metrics for legend, compass, etc.
+  updatePositioningMetrics();
   if (map) {
     requestAnimationFrame(() => map.resize());
   }
@@ -469,7 +540,15 @@ function updatePosterLayout() {
 
 function getPosterMetrics() {
   const { width, height } = getExportDimensions();
-  const labelBand = Math.round(height * 0.14);
+  
+  // Calculate label band height based on layout reference dimensions
+  const layout = getLayout();
+  let labelBandPercent = 0.14; // Default fallback
+  if (layout.unit === 'ratio' && layout.minHeight) {
+    // Label area is 1.5 inches high
+    labelBandPercent = (1.5 / layout.minHeight);
+  }
+  const labelBand = Math.round(height * labelBandPercent);
   const mapHeight = height - labelBand;
   const posterFrameRect = posterFrame ? posterFrame.getBoundingClientRect() : null;
   const renderedPosterWidth = posterFrameRect ? posterFrameRect.width : 0;
@@ -1017,28 +1096,16 @@ function renderPoiOverlays() {
     poiLegendEl.innerHTML = '';
     poiLegendEl.style.fontFamily = `"${state.fontFamily}", sans-serif`;
 
-    // Position: use saved drag position or default to bottom-right 20px in.
-    // We use left/top % so it scales with the frame.
-    if (poiLegendPos) {
-      poiLegendEl.style.left   = `${poiLegendPos.x}%`;
-      poiLegendEl.style.top    = `${poiLegendPos.y}%`;
-      poiLegendEl.style.right  = 'auto';
-      poiLegendEl.style.bottom = 'auto';
-    } else {
-      // Place default legend above the label band (label band ~14% of poster height)
-      // Shift default position 2% left by increasing the right offset by 2% of frame width.
-      const fw = posterFrame.clientWidth || 1;
-      const fh = posterFrame.clientHeight || 1;
-      const labelBandPx = Math.round(fh * 0.14);
-      const offsetRightPx = 20 + Math.round(fw * 0.02); // 2% shift to the left
-      // Move default legend 2% down (closer to bottom) by subtracting 2% of frame height
-      const extraDown = Math.round(fh * 0.02);
-      const bottomPx = Math.max(10, labelBandPx + 20 - extraDown);
-      poiLegendEl.style.right  = `${offsetRightPx}px`;
-      poiLegendEl.style.bottom = `${bottomPx}px`;
-      poiLegendEl.style.left   = 'auto';
-      poiLegendEl.style.top    = 'auto';
-    }
+    // Position legend at bottom-right based on calculated metrics
+    // Get the CSS variable values that were calculated in updatePositioningMetrics
+    const posterFrameStyles = getComputedStyle(posterFrame);
+    const legendRightVal = posterFrameStyles.getPropertyValue('--legend-right').trim() || '5.56%';
+    const legendBottomVal = posterFrameStyles.getPropertyValue('--legend-bottom').trim() || '8.33%';
+    
+    poiLegendEl.style.right  = legendRightVal;
+    poiLegendEl.style.bottom = legendBottomVal;
+    poiLegendEl.style.left   = 'auto';
+    poiLegendEl.style.top    = 'auto';
 
     poiList.forEach(poi => {
       const row = document.createElement('div');
@@ -1051,73 +1118,33 @@ function renderPoiOverlays() {
       poiLegendEl.hidden = true;
       return;
     }
-
-    // Drag logic on the legend panel.
-    let legDragging = false;
-    let legStartPx, legStartPy, legStartX, legStartY;
-
-    poiLegendEl.addEventListener('pointerdown', e => {
-      legDragging = true;
-      poiLegendEl.setPointerCapture(e.pointerId);
-      const fw = posterFrame.clientWidth  || 1;
-      const fh = posterFrame.clientHeight || 1;
-      const rect = poiLegendEl.getBoundingClientRect();
-      const frameRect = posterFrame.getBoundingClientRect();
-      // Record current top-left as % of frame at drag start.
-      legStartX = ((rect.left - frameRect.left) / fw) * 100;
-      legStartY = ((rect.top  - frameRect.top)  / fh) * 100;
-      legStartPx = e.clientX;
-      legStartPy = e.clientY;
-      poiLegendEl.classList.add('is-dragging');
-      // Switch to left/top positioning.
-      poiLegendEl.style.left   = `${legStartX}%`;
-      poiLegendEl.style.top    = `${legStartY}%`;
-      poiLegendEl.style.right  = 'auto';
-      poiLegendEl.style.bottom = 'auto';
-    }, { once: false });
-
-    poiLegendEl.addEventListener('pointermove', e => {
-      if (!legDragging) return;
-      const fw = posterFrame.clientWidth  || 1;
-      const fh = posterFrame.clientHeight || 1;
-      const nx = legStartX + ((e.clientX - legStartPx) / fw) * 100;
-      const ny = legStartY + ((e.clientY - legStartPy) / fh) * 100;
-      poiLegendEl.style.left = `${nx}%`;
-      poiLegendEl.style.top  = `${ny}%`;
-    });
-
-    poiLegendEl.addEventListener('pointerup', e => {
-      if (!legDragging) return;
-      legDragging = false;
-      poiLegendEl.classList.remove('is-dragging');
-      poiLegendEl.releasePointerCapture(e.pointerId);
-      const fw = posterFrame.clientWidth  || 1;
-      const fh = posterFrame.clientHeight || 1;
-      const nx = legStartX + ((e.clientX - legStartPx) / fw) * 100;
-      const ny = legStartY + ((e.clientY - legStartPy) / fh) * 100;
-      poiLegendPos = { x: nx, y: ny };
-      saveViewState();
-    });
-
   } else {
-    // Callout mode: draggable label box with filled triangular tail pointing to anchor.
+    // Legend mode is OFF: show callout labels with tails and dots.
     poiLegendEl.hidden = true;
 
     // One SVG layer for all tails (drawn beneath the boxes).
     const tailSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     tailSvg.setAttribute('class', 'poi-line-svg');
     tailSvg.setAttribute('aria-hidden', 'true');
+    
+    // Set SVG dimensions to match rendered frame so coordinates align
+    const frameRect = posterFrame.getBoundingClientRect();
+    const svgW = Math.round(frameRect.width || 1);
+    const svgH = Math.round(frameRect.height || 1);
+    tailSvg.setAttribute('width', svgW);
+    tailSvg.setAttribute('height', svgH);
+    tailSvg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+    
     poiOverlay.append(tailSvg);
 
     poiList.forEach(poi => {
       const anchor = poiLngLatToPercent(poi.lng, poi.lat);
       if (!anchor) return;
 
-      if (poi.labelDx == null) poi.labelDx = 0;
-      if (poi.labelDy == null) poi.labelDy = -12;
-
-      const fw = posterFrame.clientWidth  || 1;
-      const fh = posterFrame.clientHeight || 1;
+      // Get rendered frame dimensions for tail calculations
+      const frameRect = posterFrame.getBoundingClientRect();
+      const fw = frameRect.width || 1;
+      const fh = frameRect.height || 1;
 
       function tailPoints(labelX, labelY) {
         const ax = (anchor.x / 100) * fw;
@@ -1157,6 +1184,7 @@ function renderPoiOverlays() {
       // Drag logic.
       let dragging = false;
       let startPx, startPy, startDx, startDy;
+      let dragFrameW = 1, dragFrameH = 1;
 
       box.addEventListener('pointerdown', e => {
         e.stopPropagation();
@@ -1166,13 +1194,17 @@ function renderPoiOverlays() {
         startPy = e.clientY;
         startDx = poi.labelDx;
         startDy = poi.labelDy;
+        // Capture rendered frame dimensions at drag start
+        const frameRect = posterFrame.getBoundingClientRect();
+        dragFrameW = frameRect.width || 1;
+        dragFrameH = frameRect.height || 1;
         box.classList.add('is-dragging');
       });
 
       box.addEventListener('pointermove', e => {
         if (!dragging) return;
-        poi.labelDx = startDx + ((e.clientX - startPx) / fw) * 100;
-        poi.labelDy = startDy + ((e.clientY - startPy) / fh) * 100;
+        poi.labelDx = startDx + ((e.clientX - startPx) / dragFrameW) * 100;
+        poi.labelDy = startDy + ((e.clientY - startPy) / dragFrameH) * 100;
         const nx = anchor.x + poi.labelDx;
         const ny = anchor.y + poi.labelDy;
         box.style.left = `${nx}%`;
@@ -1192,8 +1224,6 @@ function renderPoiOverlays() {
     });
   }
 }
-
-/** Re-render the sidebar list of POIs. */
 function renderPoiList() {
   poiListEl.innerHTML = '';
   poiList.forEach(poi => {
@@ -1318,6 +1348,7 @@ poiAddBtn.addEventListener('click', () => {
 
 poiLegendCheck.addEventListener('change', () => {
   poiLegendMode = poiLegendCheck.checked;
+  poiOverlay.classList.toggle('legend-mode', poiLegendMode);
   renderPoiOverlays();
   saveViewState();
 });
@@ -2110,7 +2141,7 @@ async function boot() {
   ));
 
   if (!hasLayout) {
-    state.layoutId = layoutsData.defaultLayoutId || 'poster_18x24_portrait';
+    state.layoutId = layoutsData.defaultLayoutId || 'ratio_3_4_portrait';
   }
 
   labelFont.value = state.fontFamily;

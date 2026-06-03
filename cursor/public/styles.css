@@ -462,10 +462,10 @@ select:focus {
 
 .poster-compass {
   position: absolute;
-  top: 60px;
-  right: 60px;
-  width: 315px;
-  height: 315px;
+  top: var(--compass-top, 3%);
+  right: var(--compass-right, 2.5%);
+  width: var(--compass-size, 4.27%);
+  height: var(--compass-size, 4.27%);
   z-index: 2;
   pointer-events: none;
 }
@@ -516,24 +516,30 @@ select:focus {
 
 .poster-labels {
   flex-shrink: 0;
-  padding: 40px 50px;
+  height: var(--label-band-height, 12.5%);
+  padding: 8px 16px;
   text-align: center;
   pointer-events: none;
   background: #ffffff;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
 }
 
 .poster-labels h2 {
   margin: 0;
-  font-size: 72px;
+  font-size: clamp(10px, 4vw, 32px);
   font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 1.1;
 }
 
 .poster-labels p {
-  margin: 20px 0 0;
-  font-size: 48px;
+  margin: 4px 0 0;
+  font-size: clamp(8px, 2.5vw, 20px);
   font-weight: 500;
   opacity: 0.85;
   letter-spacing: 0.04em;
@@ -827,7 +833,7 @@ select:focus {
   align-items: center;
   pointer-events: none;
   filter: drop-shadow(0 3px 7px rgba(0,0,0,0.45));
-  padding-bottom: 11px; /* leaves room for the pointer triangle */
+  padding-bottom: 17px; /* leaves room for the pointer triangle */
 }
 
 /* The pointed triangle tail, rendered as a CSS border trick */
@@ -839,38 +845,61 @@ select:focus {
   transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-left: 11px solid transparent;
-  border-right: 11px solid transparent;
-  border-top: 13px solid var(--poster-text);
+  border-left: 17px solid transparent;
+  border-right: 17px solid transparent;
+  border-top: 20px solid var(--poster-text);
 }
 
 /* Circular pin body filled with theme colour */
 .poi-pin-body {
   position: relative;
   z-index: 1;
-  width: 36px;
-  height: 36px;
+  width: 54px;
+  height: 54px;
   background: var(--poster-text);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: -4px; /* overlap the triangle so they read as one shape */
+  margin-bottom: -6px; /* overlap the triangle so they read as one shape */
 }
 
 /* White inner circle containing the icon */
 .poi-pin-circle {
-  width: 22px;
-  height: 22px;
+  width: 33px;
+  height: 33px;
   background: #fff;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.6rem;
+  font-size: 1.09rem;
   font-weight: 700;
   color: var(--poster-text);
   line-height: 1;
+}
+
+/* Reduce POI pins by 50% when legend mode is active */
+.poi-overlay.legend-mode .poi-pin {
+  padding-bottom: 8.5px;
+}
+
+.poi-overlay.legend-mode .poi-pin::after {
+  border-left: 8.5px solid transparent;
+  border-right: 8.5px solid transparent;
+  border-top: 10px solid var(--poster-text);
+}
+
+.poi-overlay.legend-mode .poi-pin-body {
+  width: 27px;
+  height: 27px;
+  margin-bottom: -3px;
+}
+
+.poi-overlay.legend-mode .poi-pin-circle {
+  width: 16.5px;
+  height: 16.5px;
+  font-size: 0.545rem;
 }
 
 /* SVG layer for connector lines between anchor dots and draggable label boxes */
@@ -907,17 +936,17 @@ select:focus {
   position: absolute;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 10px;
   background: var(--poster-text);
   color: var(--poster-bg);
   border-radius: 2px;
-  padding: 8px 10px 8px 6px;
-  font-size: clamp(0.6rem, 1.2vw, 0.78rem);
+  padding: 16px 20px 16px 12px;
+  font-size: clamp(1.2rem, 2.4vw, 1.56rem);
   font-weight: 700;
   letter-spacing: 0.03em;
   box-shadow: 0 3px 10px rgba(0,0,0,0.35);
   white-space: nowrap;
-  max-width: 180px;
+  max-width: 360px;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1;
@@ -926,6 +955,18 @@ select:focus {
   user-select: none;
   touch-action: none;
   pointer-events: auto;
+}
+
+/* Reduce callout labels by 50% when legend mode is OFF */
+.poi-overlay:not(.legend-mode) .poi-callout-box {
+  gap: 5px;
+  padding: 8px 10px 8px 6px;
+  font-size: clamp(0.6rem, 1.2vw, 0.78rem);
+  max-width: 180px;
+}
+
+.poi-overlay:not(.legend-mode) .poi-callout-icon {
+  font-size: 0.9em;
 }
 
 .poi-callout-box:hover {
@@ -939,7 +980,7 @@ select:focus {
 }
 
 .poi-callout-icon {
-  font-size: 1em;
+  font-size: 1.8em;
   flex-shrink: 0;
   line-height: 1;
 }
@@ -956,10 +997,10 @@ select:focus {
   background: var(--poster-text);
   color: var(--poster-bg);
   border-radius: 2px;
-  /* scaled up 2.5x */
-  padding: 20px 25px 20px 15px;
+  /* reduced by 80% total (50% + 30%) from original size */
+  padding: 7px 8px 7px 6px;
   z-index: 9999;
-  font-size: clamp(1.5rem, 3.0vw, 1.95rem);
+  font-size: clamp(0.53rem, 1.05vw, 0.68rem);
   font-weight: 700;
   letter-spacing: 0.03em;
   box-shadow: 0 3px 10px rgba(0,0,0,0.35);
@@ -971,9 +1012,9 @@ select:focus {
   touch-action: none;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 4px;
   max-width: 50%;
-  min-width: 375px; /* increased by 25% (300 -> 375) */
+  min-width: 133px; /* reduced 30% more (190 -> 133) */
 }
 
 .poi-legend.is-dragging {
@@ -988,7 +1029,7 @@ select:focus {
 .poi-legend-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   white-space: nowrap;
 }
 

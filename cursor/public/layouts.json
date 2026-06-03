@@ -1,39 +1,64 @@
 {
-  "defaultLayoutId": "poster_18x24_portrait",
+  "defaultLayoutId": "ratio_3_4_portrait",
   "categories": [
     {
       "id": "poster",
       "name": "Poster",
       "layouts": [
         {
-          "id": "poster_12x16_portrait",
-          "name": "12×16 in (30×41 cm)",
-          "description": "Poster format sized at 12 by 16 inches.",
-          "width": 30,
-          "height": 41,
-          "unit": "cm",
-          "posterWidthCm": 30,
-          "posterHeightCm": 41
+          "id": "ratio_5_7_portrait",
+          "name": "5:7",
+          "description": "Poster aspect ratio 5 by 7.",
+          "width": 5,
+          "height": 7,
+          "unit": "ratio",
+          "minWidth": 8.3,
+          "minHeight": 11.7,
+          "minUnit": "in"
         },
         {
-          "id": "poster_18x24_portrait",
-          "name": "18×24 in (46×61 cm)",
-          "description": "Poster format sized at 18 by 24 inches.",
-          "width": 46,
-          "height": 61,
-          "unit": "cm",
-          "posterWidthCm": 46,
-          "posterHeightCm": 61
+          "id": "ratio_2_3_portrait",
+          "name": "2:3",
+          "description": "Poster aspect ratio 2 by 3.",
+          "width": 2,
+          "height": 3,
+          "unit": "ratio",
+          "minWidth": 8,
+          "minHeight": 12,
+          "minUnit": "in"
         },
         {
-          "id": "poster_24x36_portrait",
-          "name": "24×36 in (61×91 cm)",
-          "description": "Poster format sized at 24 by 36 inches.",
-          "width": 61,
-          "height": 91,
-          "unit": "cm",
-          "posterWidthCm": 61,
-          "posterHeightCm": 91
+          "id": "ratio_4_5_portrait",
+          "name": "4:5",
+          "description": "Poster aspect ratio 4 by 5.",
+          "width": 4,
+          "height": 5,
+          "unit": "ratio",
+          "minWidth": 8,
+          "minHeight": 10,
+          "minUnit": "in"
+        },
+        {
+          "id": "ratio_11_14_portrait",
+          "name": "11:14",
+          "description": "Poster aspect ratio 11 by 14.",
+          "width": 11,
+          "height": 14,
+          "unit": "ratio",
+          "minWidth": 11,
+          "minHeight": 14,
+          "minUnit": "in"
+        },
+        {
+          "id": "ratio_3_4_portrait",
+          "name": "3:4",
+          "description": "Poster aspect ratio 3 by 4.",
+          "width": 3,
+          "height": 4,
+          "unit": "ratio",
+          "minWidth": 9,
+          "minHeight": 12,
+          "minUnit": "in"
         }
       ]
     }
