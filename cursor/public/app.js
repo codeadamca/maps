@@ -459,6 +459,9 @@ function applyPosterAspect() {
 
 function updatePosterLayout() {
   applyPosterAspect();
+  // Recalculate document scale (updates CSS vars) so layout/orientation
+  // changes take effect immediately in the preview without a reload.
+  updateDocumentScale();
   if (map) {
     requestAnimationFrame(() => map.resize());
   }
