@@ -421,25 +421,38 @@ select:focus {
   color: var(--accent);
 }
 
-.poster-shell {
+/* Fixed document model container */
+.preview-container {
+  --doc-width: 1734px;
+  --doc-height: 2303px;
+  --doc-scale: 1;
   width: 100%;
   height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
 }
 
-.poster-frame {
-  aspect-ratio: var(--poster-aspect);
-  width: min(72vw, calc((100vh - 80px) * var(--poster-aspect)));
-  max-height: calc(100vh - 80px);
+.document-viewport {
+  position: relative;
+  width: calc(var(--doc-width) * var(--doc-scale));
+  height: calc(var(--doc-height) * var(--doc-scale));
+  flex: none;
+}
+
+.document {
+  width: var(--doc-width);
+  height: var(--doc-height);
   background: var(--poster-bg);
   color: var(--poster-text);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  position: relative;
+  position: absolute;
+  inset: 0 auto auto 0;
+  transform: scale(var(--doc-scale));
+  transform-origin: top left;
 }
 
 .poster-map {
@@ -449,10 +462,10 @@ select:focus {
 
 .poster-compass {
   position: absolute;
-  top: 18px;
-  right: 18px;
-  width: clamp(81px, 15%, 126px);
-  aspect-ratio: 1;
+  top: 60px;
+  right: 60px;
+  width: 315px;
+  height: 315px;
   z-index: 2;
   pointer-events: none;
 }
@@ -493,21 +506,7 @@ select:focus {
   stroke-width: 2;
 }
 
-.poster-debug {
-  position: absolute;
-  right: 18px;
-  bottom: 74px;
-  z-index: 2;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.82);
-  color: var(--poster-text);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  pointer-events: none;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-}
+/* poster-debug removed */
 
 .poster-map .maplibregl-ctrl-bottom-left,
 .poster-map .maplibregl-ctrl-bottom-right,
@@ -517,22 +516,24 @@ select:focus {
 
 .poster-labels {
   flex-shrink: 0;
-  padding: 14px 20px 18px;
+  padding: 40px 50px;
   text-align: center;
   pointer-events: none;
+  background: #ffffff;
+  z-index: 1;
 }
 
 .poster-labels h2 {
   margin: 0;
-  font-size: clamp(1.1rem, 2.4vw, 1.75rem);
+  font-size: 72px;
   font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 1.1;
 }
 
 .poster-labels p {
-  margin: 6px 0 0;
-  font-size: clamp(0.75rem, 1.4vw, 1rem);
+  margin: 20px 0 0;
+  font-size: 48px;
   font-weight: 500;
   opacity: 0.85;
   letter-spacing: 0.04em;
@@ -744,6 +745,43 @@ select:focus {
   background: rgba(255,255,255,0.1);
 }
 
+/* Map coordinates display under POI panel */
+
+
+/* Left sidebar debug panel */
+.debug-panel {
+  margin: 12px 12px;
+  padding: 10px;
+  border: 1px dashed var(--sidebar-border);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.02);
+}
+.debug-panel label {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--sidebar-muted);
+  margin-bottom: 6px;
+}
+.debug-panel input#debug-coords {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--sidebar-border);
+  border-radius: 6px;
+  background: #fff;
+  color: #111;
+  font: inherit;
+}
+
+.debug-panel input#debug-zoom {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--sidebar-border);
+  border-radius: 6px;
+  background: #fff;
+  color: #111;
+  font: inherit;
+  margin-top: 6px;
+}
 .poi-item-name {
   flex: 1;
   min-width: 0;
@@ -918,20 +956,24 @@ select:focus {
   background: var(--poster-text);
   color: var(--poster-bg);
   border-radius: 2px;
-  padding: 8px 10px 8px 6px;
-  z-index: 4;
-  font-size: clamp(0.6rem, 1.2vw, 0.78rem);
+  /* scaled up 2.5x */
+  padding: 20px 25px 20px 15px;
+  z-index: 9999;
+  font-size: clamp(1.5rem, 3.0vw, 1.95rem);
   font-weight: 700;
   letter-spacing: 0.03em;
   box-shadow: 0 3px 10px rgba(0,0,0,0.35);
+  border: 1px solid rgba(0,0,0,0.12);
+  min-width: 120px;
   pointer-events: auto;
   cursor: grab;
   user-select: none;
   touch-action: none;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  max-width: 40%;
+  gap: 10px;
+  max-width: 50%;
+  min-width: 375px; /* increased by 25% (300 -> 375) */
 }
 
 .poi-legend.is-dragging {

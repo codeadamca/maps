@@ -1,5 +1,6 @@
-const DEFAULT_CENTER = [-79.86622015711724, 45.64789087148891];
-const DEFAULT_ZOOM = 11;
+// Center set to Manicouagan Reservoir (Quebec, Canada)
+const DEFAULT_CENTER = [-68.736017, 51.429512];
+const DEFAULT_ZOOM = 9.5;
 const MAPBOX_BUILDING_FOCUS_ZOOM = 16;
 const VIEW_STATE_KEY = 'map-poster:view';
 const EXPORT_DPI = 96;
@@ -65,8 +66,8 @@ const state = {
   themeId: 'coral',
   layoutId: 'poster_18x24_portrait',
   orientation: 'portrait',
-  city: 'Whitestone Lake',
-  country: 'Ontario, Canada',
+  city: 'Manicouagan Reservoir',
+  country: 'Quebec, Canada',
   fontFamily: 'Playfair Display',
   center: [...DEFAULT_CENTER],
   zoom: DEFAULT_ZOOM,
@@ -104,9 +105,10 @@ const labelCity = document.getElementById('label-city');
 const labelCountry = document.getElementById('label-country');
 const labelFont = document.getElementById('label-font');
 const posterFrame = document.getElementById('poster-frame');
+const previewContainer = document.getElementById('preview-container');
+const documentViewport = document.getElementById('document-viewport');
 const posterCompass = document.getElementById('poster-compass');
 const posterCompassRose = document.getElementById('poster-compass-rose');
-const posterDebug = document.getElementById('poster-debug');
 const posterCity = document.getElementById('poster-city');
 const posterCountry = document.getElementById('poster-country');
 const posterLabels = document.getElementById('poster-labels');
@@ -114,6 +116,8 @@ const exportButton = document.getElementById('export-png');
 const exportSvgButton = document.getElementById('export-svg');
 const rotateLeftButton = document.getElementById('rotate-left');
 const rotateRightButton = document.getElementById('rotate-right');
+const debugCoordsInput = document.getElementById('debug-coords');
+const debugZoomInput = document.getElementById('debug-zoom');
 
 const ROTATION_STEP = 15;
 
@@ -409,6 +413,45 @@ function applyThemeUi() {
   posterLabels.style.fontFamily = `"${state.fontFamily}", sans-serif`;
 }
 
+function updateDocumentScale() {
+  if (!previewContainer) return;
+  
+  // Get document dimensions from current layout
+  const layout = getLayoutDimensions();
+  const docWidth = Math.round((layout.width / 2.54) * EXPORT_DPI);
+  const docHeight = Math.round((layout.height / 2.54) * EXPORT_DPI);
+  
+  // Set CSS variables for document size
+  previewContainer.style.setProperty('--doc-width', `${docWidth}px`);
+  previewContainer.style.setProperty('--doc-height', `${docHeight}px`);
+  
+  const availableWidth = previewContainer.clientWidth;
+  const availableHeight = previewContainer.clientHeight;
+  
+  if (availableWidth <= 0 || availableHeight <= 0) return;
+  
+  // Calculate scale to fit within available space
+  const scaleX = availableWidth / docWidth;
+  const scaleY = availableHeight / docHeight;
+  const scale = Math.min(scaleX, scaleY);
+  
+  // Apply scale via CSS variable
+  previewContainer.style.setProperty('--doc-scale', String(scale));
+}
+
+function setupDocumentScaleObserver() {
+  if (!previewContainer || typeof ResizeObserver === 'undefined') return;
+  
+  const observer = new ResizeObserver(() => {
+    updateDocumentScale();
+  });
+  
+  observer.observe(previewContainer);
+  
+  // Initial scale calculation
+  updateDocumentScale();
+}
+
 function applyPosterAspect() {
   const layout = getLayoutDimensions();
   posterFrame.style.setProperty('--poster-aspect', `${layout.width} / ${layout.height}`);
@@ -584,12 +627,7 @@ function formatZoomValue(zoom) {
   return Number.isFinite(zoom) ? zoom.toFixed(2) : '0.00';
 }
 
-function applyDebugOverlay() {
-  if (!posterDebug) return;
-  posterDebug.hidden = !appConfig.debug;
-  if (!appConfig.debug) return;
-  posterDebug.textContent = `Zoom: ${formatZoomValue(state.zoom)}`;
-}
+// debug overlay removed
 
 function rotateMapBy(delta) {
   if (!map) return;
@@ -668,9 +706,24 @@ function initMap() {
     state.center = [center.lng, center.lat];
     state.zoom = map.getZoom();
     state.bearing = map.getBearing();
-    applyDebugOverlay();
     saveViewState();
   });
+
+  // Update debug coordinate display on move
+  function updateMapCoordsInput() {
+    if (!map) return;
+    const c = map.getCenter();
+    const val = `${c.lng.toFixed(6)}, ${c.lat.toFixed(6)}`;
+    if (debugCoordsInput) debugCoordsInput.value = val;
+    if (debugZoomInput && typeof map.getZoom === 'function') {
+      const z = map.getZoom();
+      debugZoomInput.value = z.toFixed(2);
+    }
+  }
+
+  map.on('move', updateMapCoordsInput);
+  map.on('zoom', updateMapCoordsInput);
+  map.once('load', updateMapCoordsInput);
 
   map.on('rotate', applyCompassRotation);
   map.on('rotateend', () => {
@@ -687,7 +740,6 @@ function initMap() {
   requestAnimationFrame(() => {
     map.resize();
     applyCompassRotation();
-    applyDebugOverlay();
   });
 }
 
@@ -902,6 +954,21 @@ document.getElementById('zoom-out').addEventListener('click', () => map.zoomOut(
 rotateLeftButton.addEventListener('click', () => rotateMapBy(-ROTATION_STEP));
 rotateRightButton.addEventListener('click', () => rotateMapBy(ROTATION_STEP));
 
+// Reset app: clear localStorage and reload (with confirmation)
+const resetButton = document.getElementById('reset-app-button');
+if (resetButton) {
+  resetButton.addEventListener('click', () => {
+    if (!confirm('Clear all saved settings and start fresh? This will remove local storage.')) return;
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch (e) {
+      console.warn('Error clearing storage', e);
+    }
+    location.reload();
+  });
+}
+
 // ── Points of Interest logic ──────────────────────────────────────────────────
 
 function poiNextId() {
@@ -955,8 +1022,17 @@ function renderPoiOverlays() {
       poiLegendEl.style.right  = 'auto';
       poiLegendEl.style.bottom = 'auto';
     } else {
-      poiLegendEl.style.right  = '20px';
-      poiLegendEl.style.bottom = '20px';
+      // Place default legend above the label band (label band ~14% of poster height)
+      // Shift default position 2% left by increasing the right offset by 2% of frame width.
+      const fw = posterFrame.clientWidth || 1;
+      const fh = posterFrame.clientHeight || 1;
+      const labelBandPx = Math.round(fh * 0.14);
+      const offsetRightPx = 20 + Math.round(fw * 0.02); // 2% shift to the left
+      // Move default legend 2% down (closer to bottom) by subtracting 2% of frame height
+      const extraDown = Math.round(fh * 0.02);
+      const bottomPx = Math.max(10, labelBandPx + 20 - extraDown);
+      poiLegendEl.style.right  = `${offsetRightPx}px`;
+      poiLegendEl.style.bottom = `${bottomPx}px`;
       poiLegendEl.style.left   = 'auto';
       poiLegendEl.style.top    = 'auto';
     }
@@ -967,7 +1043,11 @@ function renderPoiOverlays() {
       row.innerHTML = `<span class="poi-legend-icon"><i class="${POI_ICONS[poi.iconIdx]}"></i></span><span class="poi-legend-name">${escapeHtml(poi.name)}</span>`;
       poiLegendEl.append(row);
     });
-    if (!poiList.length) { poiLegendEl.hidden = true; return; }
+    if (!poiList.length) {
+      // Hide the legend entirely when there are no POIs.
+      poiLegendEl.hidden = true;
+      return;
+    }
 
     // Drag logic on the legend panel.
     let legDragging = false;
@@ -2034,7 +2114,6 @@ async function boot() {
   applyThemeUi();
   updatePosterLayout();
   applyLabels();
-  applyDebugOverlay();
   applyCompassVisibility();
   renderThemeGrid();
   renderLayerList();
@@ -2045,6 +2124,7 @@ async function boot() {
   renderPoiList();
   // Render overlays once the map tiles are loaded so projections are accurate.
   map.once('load', renderPoiOverlays);
+  setupDocumentScaleObserver();
   saveViewState();
 }
 

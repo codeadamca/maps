@@ -20,6 +20,12 @@
         <h1>Custom Map</h1>
       </header>
 
+      <div class="debug-panel" id="debug-panel">
+        <label for="debug-coords">Debug</label>
+        <input type="text" id="debug-coords" readonly aria-label="Debug current center coordinates">
+        <input type="text" id="debug-zoom" readonly aria-label="Debug current zoom level">
+      </div>
+
       <section class="location-panel">
         <h2 class="location-heading">Location</h2>
         <div class="search-wrap">
@@ -128,11 +134,13 @@
         <button type="button" id="rotate-left" class="icon-btn" title="Rotate left 15 degrees" aria-label="Rotate left 15 degrees">↻</button>
         <button type="button" id="zoom-out" class="icon-btn" title="Zoom out">−</button>
         <button type="button" id="zoom-in" class="icon-btn" title="Zoom in">+</button>
+        <button type="button" id="reset-app-button" class="icon-btn" title="Reset app" aria-label="Reset application">⟲</button>
       </div>
-      <div class="poster-shell">
-        <div class="poster-frame" id="poster-frame">
+      <div class="preview-container" id="preview-container">
+        <div class="document-viewport" id="document-viewport">
+          <div class="document" id="poster-frame">
           <div id="map" class="poster-map"></div>
-          <div class="poster-debug" id="poster-debug" aria-live="polite"></div>
+            
           <div class="poster-compass" id="poster-compass" aria-hidden="true">
             <svg viewBox="0 0 100 100" class="poster-compass-svg" role="presentation">
               <circle cx="50" cy="50" r="38" class="poster-compass-disc" />
