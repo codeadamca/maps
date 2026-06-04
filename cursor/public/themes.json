@@ -1,54 +1,110 @@
 {
   "themes": {
+    "lake": {
+      "name": "Lake",
+      "description": "Lake-first palette: muted teal lakes, warm beige land, and sienna roads.",
+      "ui": {
+        "bg": "#F3E9DF",
+        "text": "#C36B4A",
+        "label": "#8B3C2A"
+      },
+      "map": {
+        "land": "#F3E9DF",
+        "landcover": "#EDE6DD",
+        "water": "#8FB9BD",
+        "waterway": "#8FB9BD",
+        "parks": "#E9E2DA",
+        "buildings": "#D7C4B3",
+        "aeroway": "#E9E2DA",
+        "rail": "#8B3C2A",
+        "roads": {
+          "major": "#C36B4A",
+          "path": "#E8CDBF",
+          "outline": "#EDD7CF",
+          "minor_high": "#B0553E",
+          "minor_mid": "#D18B73",
+          "minor_low": "#E4BDAA"
+        }
+      }
+    },
     "coral": {
       "name": "Coral",
       "description": "Soft ivory base with warm coral roads and muted pink-blue features.",
       "ui": {
-        "bg": "#F3E1DA",
-        "text": "#6E2F28"
+        "bg": "#F4F5F5",
+        "text": "#3E2F2A",
+        "label": "#3E2F2A"
       },
       "map": {
-        "land": "#F3E1DA",
-        "landcover": "#EFD8D0",
-        "water": "#DFC0B5",
-        "waterway": "#DFC0B5",
-        "parks": "#EACFC6",
-        "buildings": "#E39B89",
-        "aeroway": "#EACFC6",
-        "rail": "#6e2f28",
+        "land": "#F4F5F5",
+        "landcover": "#EFEEEE",
+        "water": "#4FBDB6",
+        "waterway": "#4FBDB6",
+        "parks": "#F1F0EF",
+        "buildings": "#DAD6D3",
+        "aeroway": "#F1F0EF",
+        "rail": "#3E2F2A",
         "roads": {
-          "major": "#B9473A",
-          "path": "#E8C4B8",
-          "outline": "#EDD2C8",
-          "minor_high": "#C86050",
-          "minor_mid": "#E09888",
-          "minor_low": "#DDAA9A"
+          "major": "#C08A79",
+          "path": "#EADFD9",
+          "outline": "#E6DDD6",
+          "minor_high": "#B77A69",
+          "minor_mid": "#D3B0A6",
+          "minor_low": "#E9D8D1"
+        }
+      }
+    },
+    "lake_alt": {
+      "name": "Lake Soft",
+      "description": "Soft minty roads, pale land, and muted teal lakes (from provided palette).",
+      "ui": {
+        "bg": "#F6FBF8",
+        "text": "#204B3A",
+        "label": "#204B3A"
+      },
+      "map": {
+        "land": "#F3F9F6",
+        "landcover": "#EEF8F4",
+        "water": "#86BFC3",
+        "waterway": "#86BFC3",
+        "parks": "#EEF7F0",
+        "buildings": "#DAD6CF",
+        "aeroway": "#EEF7F0",
+        "rail": "#2E5A48",
+        "roads": {
+          "major": "#9DBFA7",
+          "path": "#E9F0EA",
+          "outline": "#EEF7F4",
+          "minor_high": "#88AB94",
+          "minor_mid": "#BFD7C4",
+          "minor_low": "#E6F0E9"
         }
       }
     },
     "heatwave": {
       "name": "Heatwave",
-      "description": "Charred dark base with glowing orange roads and sunlit highlights.",
+      "description": "Attachment-based variant: light cyan lakes, dark brown land, deep green main roads.",
       "ui": {
-        "bg": "#1C0E09",
-        "text": "#FFD78A"
+        "bg": "#3A3229",
+        "text": "#D8F6FB",
+        "label": "#3A3229"
       },
       "map": {
-        "land": "#1C0E09",
-        "landcover": "#28140C",
-        "water": "#2C140C",
-        "waterway": "#2C140C",
-        "parks": "#381A10",
-        "buildings": "#D2A55E",
-        "aeroway": "#381A10",
-        "rail": "#ffd78a",
+        "land": "#3A3229",
+        "landcover": "#43362D",
+        "water": "#A6E6F7",
+        "waterway": "#A6E6F7",
+        "parks": "#3A3229",
+        "buildings": "#53463C",
+        "aeroway": "#43362D",
+        "rail": "#072F26",
         "roads": {
-          "major": "#FF5F1F",
-          "path": "#59442c",
-          "outline": "#695235",
-          "minor_high": "#B04010",
-          "minor_mid": "#493623",
-          "minor_low": "#3c2a1b"
+          "major": "#072F26",
+          "path": "#CBBDAA",
+          "outline": "#BFAF9D",
+          "minor_high": "#8F7A6B",
+          "minor_mid": "#B99D8E",
+          "minor_low": "#E5D7C9"
         }
       }
     },
@@ -56,25 +112,26 @@
       "name": "Ruby",
       "description": "Garnet-inspired palette with rich reds over deep plum city blocks.",
       "ui": {
-        "bg": "#1A070F",
-        "text": "#F6D7BC"
+        "bg": "#173039",
+        "text": "#E9FBFD",
+        "label": "#173039"
       },
       "map": {
-        "land": "#1A070F",
-        "landcover": "#280C18",
-        "water": "#2A0D17",
-        "waterway": "#2A0D17",
-        "parks": "#351021",
-        "buildings": "#EE8EA4",
-        "aeroway": "#351021",
-        "rail": "#f6d7bc",
+        "land": "#173039",
+        "landcover": "#21363D",
+        "water": "#C7EEF5",
+        "waterway": "#C7EEF5",
+        "parks": "#1F3338",
+        "buildings": "#2F454C",
+        "aeroway": "#1F3338",
+        "rail": "#E9FBFD",
         "roads": {
-          "major": "#C0103C",
-          "path": "#553f3e",
-          "outline": "#654e4a",
-          "minor_high": "#780C2C",
-          "minor_mid": "#463132",
-          "minor_low": "#392427"
+          "major": "#F6E49A",
+          "path": "#D9C9B0",
+          "outline": "#BBAF8E",
+          "minor_high": "#BFA97D",
+          "minor_mid": "#D7C8B7",
+          "minor_low": "#EDE7DF"
         }
       }
     },
@@ -82,77 +139,53 @@
       "name": "Sage",
       "description": "Muted botanical tones with cool green roads and gentle contrast.",
       "ui": {
-        "bg": "#DDE8DD",
-        "text": "#2D4739"
+        "bg": "#2E2E2E",
+        "text": "#F7ECA8",
+        "label": "#000000"
       },
       "map": {
-        "land": "#DDE8DD",
-        "landcover": "#D8E4DA",
-        "water": "#C5D4CB",
-        "waterway": "#C5D4CB",
-        "parks": "#D3DFD7",
-        "buildings": "#8BAD9B",
-        "aeroway": "#D3DFD7",
-        "rail": "#2d4739",
+        "land": "#2E2E2E",
+        "landcover": "#3A3A3A",
+        "water": "#F7ECA8",
+        "waterway": "#F7ECA8",
+        "parks": "#2A2A2A",
+        "buildings": "#393939",
+        "aeroway": "#3A3A3A",
+        "rail": "#000000",
         "roads": {
-          "major": "#3F624F",
-          "path": "#BECCBF",
-          "outline": "#C8D8CC",
-          "minor_high": "#587A68",
-          "minor_mid": "#92B4A2",
-          "minor_low": "#AABFB4"
+          "major": "#000000",
+          "path": "#CFCFCF",
+          "outline": "#BFBFBF",
+          "minor_high": "#8F8F8F",
+          "minor_mid": "#B0B0B0",
+          "minor_low": "#DCDCDC"
         }
       }
     },
-    "copper": {
-      "name": "Copper",
-      "description": "Oxidized cream and copper tones with warm metallic road accents.",
+    "ocean": {
+      "name": "Ocean",
+      "description": "Crisp white background with very light blue land, medium blue lakes and navy roads.",
       "ui": {
-        "bg": "#E1D2C6",
-        "text": "#4E2F22"
+        "bg": "#FFFFFF",
+        "text": "#06283D",
+        "label": "#06283D"
       },
       "map": {
-        "land": "#E1D2C6",
-        "landcover": "#DCCCBE",
-        "water": "#CBB5A1",
-        "waterway": "#CBB5A1",
-        "parks": "#D8C6B5",
-        "buildings": "#C88B72",
-        "aeroway": "#D8C6B5",
-        "rail": "#4e2f22",
+          "land": "#EAF7FF",
+          "landcover": "#FFFFFF",
+        "water": "#66BFD9",
+        "waterway": "#66BFD9",
+        "parks": "#E6F5FF",
+        "buildings": "#D1EAF6",
+        "aeroway": "#E6F5FF",
+        "rail": "#06283D",
         "roads": {
-          "major": "#7C452E",
-          "path": "#CEBAA6",
-          "outline": "#D4C2AE",
-          "minor_high": "#9E5A3C",
-          "minor_mid": "#C49078",
-          "minor_low": "#C8A890"
-        }
-      }
-    },
-    "rustic": {
-      "name": "Rustic",
-      "description": "Earthy paper-like base with wood and clay road tones.",
-      "ui": {
-        "bg": "#DFD5C8",
-        "text": "#44362C"
-      },
-      "map": {
-        "land": "#DFD5C8",
-        "landcover": "#D9CEC0",
-        "water": "#C4B8A8",
-        "waterway": "#C4B8A8",
-        "parks": "#D2C6B7",
-        "buildings": "#9E7A62",
-        "aeroway": "#D2C6B7",
-        "rail": "#44362c",
-        "roads": {
-          "major": "#563A2A",
-          "path": "#C6A898",
-          "outline": "#CCB0A0",
-          "minor_high": "#7A5040",
-          "minor_mid": "#A68070",
-          "minor_low": "#B89080"
+          "major": "#06283D",
+          "path": "#E8F7FF",
+          "outline": "#DDEFF6",
+          "minor_high": "#4CA3CC",
+          "minor_mid": "#9FD7E6",
+          "minor_low": "#DFF6FB"
         }
       }
     }

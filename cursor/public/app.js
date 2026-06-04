@@ -308,6 +308,8 @@ function getTheme() {
   return themesData.themes[state.themeId] || themesData.themes.coral;
 }
 
+// (helpers removed) keep theme text values as defined in `themes.json`
+
 function getLayout() {
   for (const category of layoutsData.categories || []) {
     const match = (category.layouts || []).find(layout => layout.id === state.layoutId);
@@ -432,6 +434,8 @@ function applyThemeUi() {
   const theme = getTheme();
   document.documentElement.style.setProperty('--poster-bg', theme.ui.bg);
   document.documentElement.style.setProperty('--poster-text', theme.ui.text);
+  // label color used for the text in the white label band under the map
+  document.documentElement.style.setProperty('--poster-label', theme.ui.label || theme.ui.text);
   document.documentElement.style.setProperty('--compass-bg', theme.ui.bg);
   document.documentElement.style.setProperty('--compass-ring', theme.ui.text);
   document.documentElement.style.setProperty('--compass-accent', theme.map.water || theme.ui.text);
@@ -1454,7 +1458,7 @@ async function exportPng() {
 
     drawPoiPng(ctx, width, mapHeight);
 
-    ctx.fillStyle = theme.ui.text;
+    ctx.fillStyle = theme.ui.label || theme.ui.text;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = `700 ${titleSize}px "${state.fontFamily}", sans-serif`;
@@ -2083,8 +2087,8 @@ async function exportSvg() {
       buildCompassSvg(theme, width, mapHeight),
       buildPoiSvg(width, mapHeight),
       `  <rect x="0" y="${mapHeight}" width="${width}" height="${labelBand}" fill="${escapeXml(theme.ui.bg)}" />`,
-      `  <text x="${Math.round(width / 2)}" y="${titleY}" text-anchor="middle" dominant-baseline="middle" fill="${escapeXml(theme.ui.text)}" font-family="${escapeXml(fontConfig.family)}, sans-serif" font-size="${titleSize}" font-weight="700">${escapeXml(state.city)}</text>`,
-      `  <text x="${Math.round(width / 2)}" y="${subtitleY}" text-anchor="middle" dominant-baseline="middle" fill="${escapeXml(theme.ui.text)}" fill-opacity="0.85" font-family="${escapeXml(fontConfig.family)}, sans-serif" font-size="${subtitleSize}" font-weight="${subtitleFontWeight}" letter-spacing="0.04em">${escapeXml(state.country)}</text>`,
+      `  <text x="${Math.round(width / 2)}" y="${titleY}" text-anchor="middle" dominant-baseline="middle" fill="${escapeXml(theme.ui.label || theme.ui.text)}" font-family="${escapeXml(fontConfig.family)}, sans-serif" font-size="${titleSize}" font-weight="700">${escapeXml(state.city)}</text>`,
+      `  <text x="${Math.round(width / 2)}" y="${subtitleY}" text-anchor="middle" dominant-baseline="middle" fill="${escapeXml(theme.ui.label || theme.ui.text)}" fill-opacity="0.85" font-family="${escapeXml(fontConfig.family)}, sans-serif" font-size="${subtitleSize}" font-weight="${subtitleFontWeight}" letter-spacing="0.04em">${escapeXml(state.country)}</text>`,
       '</svg>'
     ].filter(Boolean).join('\n');
 

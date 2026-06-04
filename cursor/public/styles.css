@@ -7,6 +7,7 @@
   --preview-bg: #0e0e11;
   --poster-bg: #f3e1da;
   --poster-text: #6e2f28;
+  --poster-label: var(--poster-text);
   --poster-aspect: 21 / 29.7;
   --compass-bg: #f3e1da;
   --compass-ring: #6e2f28;
@@ -550,6 +551,7 @@ select:focus {
   font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 1.1;
+  color: var(--poster-label);
 }
 
 .poster-labels p {
@@ -558,6 +560,7 @@ select:focus {
   font-weight: 500;
   opacity: 0.85;
   letter-spacing: 0.04em;
+  color: var(--poster-label);
 }
 
 .preview--lake {
