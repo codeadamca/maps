@@ -837,7 +837,25 @@ function renderThemeGrid() {
 
     const preview = document.createElement('span');
     preview.className = 'theme-swatch-preview';
-    preview.style.background = `linear-gradient(135deg, ${theme.ui.bg} 50%, ${theme.map.water} 50%)`;
+
+    // three-color preview: main road, water, land
+    const roadColor = (theme.map && theme.map.roads && theme.map.roads.major) || theme.ui.text || '#000';
+    const waterColor = (theme.map && theme.map.water) || theme.ui.bg || '#aaddff';
+    const landColor = (theme.map && theme.map.land) || theme.ui.bg || '#fff';
+
+    const swRoad = document.createElement('span');
+    swRoad.className = 'theme-swatch-color theme-swatch-color--road';
+    swRoad.style.background = roadColor;
+
+    const swWater = document.createElement('span');
+    swWater.className = 'theme-swatch-color theme-swatch-color--water';
+    swWater.style.background = waterColor;
+
+    const swLand = document.createElement('span');
+    swLand.className = 'theme-swatch-color theme-swatch-color--land';
+    swLand.style.background = landColor;
+
+    preview.append(swRoad, swWater, swLand);
 
     const name = document.createElement('span');
     name.className = 'theme-swatch-name';
