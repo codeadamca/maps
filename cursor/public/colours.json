@@ -1,0 +1,19 @@
+{
+  "colours": {
+    "navy": {
+      "name": "Navy",
+      "primary": "#1F3B5C",
+      "background": "#FFFFFF"
+    },
+    "forest": {
+      "name": "Forest",
+      "primary": "#2F5D50",
+      "background": "#FFFFFF"
+    },
+    "charcoal": {
+      "name": "Charcoal",
+      "primary": "#333333",
+      "background": "#FFFFFF"
+    }
+  }
+}
