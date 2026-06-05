@@ -774,6 +774,7 @@ select:focus {
 
 /* Left sidebar debug panel */
 .debug-panel {
+  display: none;
   margin: 12px 12px;
   padding: 10px;
   border: 1px dashed var(--sidebar-border);
