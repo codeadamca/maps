@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lake Silhouette | Lakelines Co.</title>
+  <title>Lake Search | Lakelines Co.</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&family=Roboto+Condensed:wght@400;500;700&display=swap" rel="stylesheet">
   <link href="/styles.css" rel="stylesheet">
 </head>
@@ -16,7 +16,7 @@
           <span>/</span>
           <span>Lake Silhouette</span>
         </div>
-        <h1>Lake Silhouette</h1>
+        <h1>Lake</h1>
       </header>
 
       <section class="location-panel">
@@ -86,9 +86,16 @@
 
     <main class="preview">
       <div class="preview-container" id="preview-container">
+        <div class="preview-toolbar">
+          <button type="button" id="zoom-in" class="icon-btn" title="Zoom in" aria-label="Zoom in">+</button>
+          <button type="button" id="zoom-out" class="icon-btn" title="Zoom out" aria-label="Zoom out">−</button>
+          <button type="button" id="rotate-left" class="icon-btn" title="Rotate left 15 degrees" aria-label="Rotate left 15 degrees">↻</button>
+          <button type="button" id="rotate-right" class="icon-btn" title="Rotate right 15 degrees" aria-label="Rotate right 15 degrees">↺</button>
+          <button type="button" id="reset-app-button" class="icon-btn" title="Reset application" aria-label="Reset application">⟲</button>
+        </div>
         <div class="document-viewport" id="document-viewport">
           <div class="document lake-document" id="lake-frame">
-            <div class="lake-silhouette-area">
+            <div class="lake-silhouette-area" id="lake-silhouette-area">
               <svg class="lake-silhouette-svg" id="lake-silhouette-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
                 <!-- Lake GeoJSON rendered here -->
               </svg>
@@ -99,6 +106,7 @@
               <p id="lake-label-coordinates"></p>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </main>
