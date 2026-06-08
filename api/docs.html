@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>LakeLines API Tester</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #0b0f14;
+    color: #e8eef5;
+    margin: 0;
+    padding: 30px;
+}
+
+h1 {
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 20px;
+}
+
+.panel {
+    background: #111826;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+select, textarea, input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 8px;
+    margin-bottom: 15px;
+    background: #0b1220;
+    color: #fff;
+    border: 1px solid #1e2a38;
+    border-radius: 6px;
+}
+
+button {
+    padding: 10px 14px;
+    background: #2563eb;
+    border: none;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #1d4ed8;
+}
+
+pre {
+    background: #0b1220;
+    padding: 15px;
+    border-radius: 8px;
+    overflow: auto;
+    white-space: pre-wrap;
+}
+
+label {
+    font-size: 12px;
+    color: #9aa4b2;
+}
+
+h3 {
+    margin-top: 0;
+    font-weight: 600;
+}
+</style>
+</head>
+
+<body>
+
+<h1>LakeLines API Tester</h1>
+
+<div class="container">
+
+<div class="panel">
+
+<label>Endpoint</label>
+<select id="endpoint">
+    <option value="/owner/create">POST /owner/create</option>
+    <option value="/owner/OWNER-ID">GET /owner/:id</option>
+    <option value="/owner/edit">POST /owner/edit</option>
+    <option value="/design/create">POST /design/create</option>
+    <option value="/design/edit">POST /design/edit</option>
+    <option value="/design/LL-ID">GET /design/:id</option>
+    <option value="/designs/owner/OWNER-ID">GET /designs/owner/:id</option>
+</select>
+
+<label>Method</label>
+<select id="method">
+    <option>GET</option>
+    <option>POST</option>
+    <option>DELETE</option>
+</select>
+
+<label>Request Body (JSON)</label>
+<textarea id="body" rows="10">{}</textarea>
+
+<button onclick="sendRequest()">Send Request</button>
+
+</div>
+
+<div class="panel">
+
+<h3>Response</h3>
+<pre id="output">Waiting for request...</pre>
+
+</div>
+
+</div>
+
+<script>
+async function sendRequest() {
+
+    let endpoint = document.getElementById("endpoint").value;
+    let method = document.getElementById("method").value;
+    let bodyText = document.getElementById("body").value;
+
+    let options = {
+        method: method,
+        headers: {
+            "Content-Type": "application/json"
+        }
+    };
+
+    if (method !== "GET") {
+        options.body = bodyText;
+    }
+
+    let res = await fetch("https://api.lakelines.co" + endpoint, options);
+    let json = await res.json();
+
+    document.getElementById("output").textContent =
+        JSON.stringify(json, null, 2);
+}
+</script>
+
+</body>
+</html>
