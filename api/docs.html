@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>LakeLines API Tester</title>
+<title>LakeLines API Docs</title>
 
 <style>
 body {
@@ -15,7 +15,6 @@ body {
 
 h1 {
     margin-bottom: 20px;
-    font-weight: 600;
 }
 
 .container {
@@ -30,11 +29,10 @@ h1 {
     border-radius: 8px;
 }
 
-select, textarea, input {
+select, textarea {
     width: 100%;
     padding: 10px;
-    margin-top: 8px;
-    margin-bottom: 15px;
+    margin: 8px 0 15px 0;
     background: #0b1220;
     color: #fff;
     border: 1px solid #1e2a38;
@@ -61,36 +59,39 @@ pre {
     overflow: auto;
     white-space: pre-wrap;
 }
-
-label {
-    font-size: 12px;
-    color: #9aa4b2;
-}
-
-h3 {
-    margin-top: 0;
-    font-weight: 600;
-}
 </style>
 </head>
 
 <body>
 
-<h1>LakeLines API Tester</h1>
+<h1>LakeLines API Docs</h1>
 
 <div class="container">
 
+<!-- LEFT -->
 <div class="panel">
 
 <label>Endpoint</label>
 <select id="endpoint">
+
+    <option value="/health">GET /health</option>
+
     <option value="/owner/create">POST /owner/create</option>
-    <option value="/owner/OWNER-ID">GET /owner/:id</option>
+    <option value="/owner/OWNER_ID">GET /owner/:id</option>
     <option value="/owner/edit">POST /owner/edit</option>
+    <option value="/owner/OWNER_ID">DELETE /owner/:id</option>
+
     <option value="/design/create">POST /design/create</option>
     <option value="/design/edit">POST /design/edit</option>
-    <option value="/design/LL-ID">GET /design/:id</option>
-    <option value="/designs/owner/OWNER-ID">GET /designs/owner/:id</option>
+    <option value="/design/duplicate">POST /design/duplicate</option>
+
+    <option value="/design/DESIGN_ID">GET /design/:id (JSON)</option>
+    <option value="/design/svg/DESIGN_ID">GET /design/svg/:id (SVG)</option>
+
+    <option value="/designs/owner/OWNER_ID">GET /designs/owner/:id</option>
+
+    <option value="/design/DESIGN_ID">DELETE /design/:id</option>
+
 </select>
 
 <label>Method</label>
@@ -101,16 +102,17 @@ h3 {
 </select>
 
 <label>Request Body (JSON)</label>
-<textarea id="body" rows="10">{}</textarea>
+<textarea id="body">{}</textarea>
 
 <button onclick="sendRequest()">Send Request</button>
 
 </div>
 
+<!-- RIGHT -->
 <div class="panel">
 
 <h3>Response</h3>
-<pre id="output">Waiting for request...</pre>
+<pre id="output">Ready</pre>
 
 </div>
 
@@ -135,10 +137,10 @@ async function sendRequest() {
     }
 
     let res = await fetch("https://api.lakelines.co" + endpoint, options);
-    let json = await res.json();
 
-    document.getElementById("output").textContent =
-        JSON.stringify(json, null, 2);
+    let text = await res.text();
+
+    document.getElementById("output").textContent = text;
 }
 </script>
 
