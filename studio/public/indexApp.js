@@ -47,9 +47,10 @@ async function loadDesigns() {
       designsContainer.classList.add('designs-container');
       designsContainer.style.display = 'grid';
       designsContainer.style.gridTemplateColumns = 'repeat(auto-fill, minmax(240px, 1fr))';
-      designsContainer.style.gap = '18px';
+      designsContainer.style.gap = '14px';
 
-      newDesigns.forEach(design => {
+      // Use an async loop so we can fetch each design's state and show its first label
+      for (const design of newDesigns) {
         console.log(design);
         const link = document.createElement('a');
         link.href = `/${design.design_type}/${design.design_id}`;
@@ -59,7 +60,7 @@ async function loadDesigns() {
         const head = document.createElement('div');
         head.className = 'card-head';
 
-        const thumbUrl = `https://api.lakelines.co/design/svg/${design.design_id}`;
+        const thumbUrl = `https://api.lakelines.co/design/thumb/${design.design_id}`;
         // Put thumbnail SVG behind the card content so it sits behind the button and icon
         link.style.position = 'relative';
         link.style.overflow = 'hidden';
@@ -67,6 +68,8 @@ async function loadDesigns() {
         const bgImg = document.createElement('img');
         bgImg.src = thumbUrl;
         bgImg.alt = '';
+        // Make thumbnauil 20% transparent so text is more readable on top of it
+        bgImg.style.opacity = '0.2';
         bgImg.setAttribute('aria-hidden', 'true');
         bgImg.style.position = 'absolute';
         bgImg.style.left = '0';
@@ -79,8 +82,27 @@ async function loadDesigns() {
         bgImg.style.pointerEvents = 'none';
         link.appendChild(bgImg);
 
-        const title = document.createElement('h2');
-        title.textContent = design.name;
+        const title = document.createElement('h2  ');
+        // Try to fetch the full design to extract the first label (title)
+        (async () => {
+          try {
+            const resp = await fetch(`https://api.lakelines.co/design/${design.design_id}`);
+            if (resp.ok) {
+              const j = await resp.json();
+              const state = j.design && j.design.state_json ? j.design.state_json : null;
+              let parsed = state;
+              if (typeof state === 'string') {
+                try { parsed = JSON.parse(state); } catch (e) { parsed = null; }
+              }
+              const firstLabel = parsed && Array.isArray(parsed.labels) && parsed.labels[0] ? parsed.labels[0] : null;
+              title.textContent = firstLabel || design.design_id;
+            } else {
+              title.textContent = design.design_id;
+            }
+          } catch (e) {
+            title.textContent = design.design_id;
+          }
+        })();
 
         head.appendChild(title);
         // make sure content sits above the background image
@@ -119,7 +141,7 @@ async function loadDesigns() {
         link.appendChild(rightGroup);
 
         designsContainer.appendChild(link);
-      });
+      }
 
       designList.appendChild(designsContainer);
 
