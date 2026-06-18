@@ -16,11 +16,6 @@ function blendHex(hexA, hexB, weight = 0.5) {
   return '#' + [mix(a.r,b.r), mix(a.g,b.g), mix(a.b,b.b)].map(x => x.toString(16).padStart(2,'0')).join('');
 }
 
-
-
-
-
-
 const OPENFREEMAP_SOURCE = "https://tiles.openfreemap.org/planet";
 const OPENFREEMAP_SOURCE_ID = "openfreemap";
 const MAPBOX_SOURCE_ID = "mapbox-streets";

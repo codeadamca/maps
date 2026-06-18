@@ -1,0 +1,25 @@
+{
+  "options": [
+    { "id": "landcover", "label": "Land cover", "ids": ["landcover"] },
+    { "id": "parks", "label": "Parks", "ids": ["park", "aeroway"] },
+    { "id": "water", "label": "Water", "ids": ["water", "waterway"] },
+    { "id": "buildings", "label": "Buildings", "ids": ["building"] },
+    { "id": "roads", "label": "Roads", "ids": [
+      "road-minor-overview-high",
+      "road-minor-overview-mid",
+      "road-minor-overview-low",
+      "road-path-overview",
+      "road-major-casing",
+      "road-minor-high-casing",
+      "road-minor-mid-casing",
+      "road-path-casing",
+      "road-major",
+      "road-minor-high",
+      "road-minor-mid",
+      "road-minor-low",
+      "road-path"
+    ] },
+    { "id": "rail", "label": "Rail", "ids": ["rail"] },
+    { "id": "compass", "label": "Compass", "ids": [] }
+  ]
+}

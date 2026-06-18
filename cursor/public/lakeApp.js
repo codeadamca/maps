@@ -1,63 +1,9 @@
-// Lake Silhouette Application
+// Lake application
 // Completely independent from map application
 
-const STATE_KEY = 'lake-silhouette:state';
-const LAKE_SEARCH_DEBOUNCE_MS = 300;
-const LAKE_DOCUMENT_BASE_WIDTH = 600; // Base width in px for 3:4 aspect ratio
-
-// Default configuration
-const DEFAULT_LAKE_DATA = {
-  lakeName: 'Lake of the Ozarks',
-  region: 'Missouri, Camden County, United States',
-  lat: 38.144376,
-  lon: -92.6594707,
-  osmType: 'relation',
-  osmId: '405844'
-};
-
-// Font configuration (reused from mapApp.js)
-const SVG_FONT_CONFIG = {
-  'Playfair Display': {
-    family: 'Playfair Display',
-    weights: [600, 700],
-    url: 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/playfairdisplay/PlayfairDisplay%5Bwght%5D.ttf'
-  },
-  Inter: {
-    family: 'Inter',
-    weights: [500, 700],
-    url: 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/inter/Inter%5Bopsz,wght%5D.ttf'
-  },
-  'Roboto Condensed': {
-    family: 'Roboto Condensed',
-    weights: [400, 500, 700],
-    url: 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/robotocondensed/RobotoCondensed%5Bwght%5D.ttf'
-  },
-  'Cormorant Garamond': {
-    family: 'Cormorant Garamond',
-    weights: [500, 600, 700],
-    url: 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/cormorantgaramond/CormorantGaramond%5Bwght%5D.ttf'
-  }
-};
-
-const state = {
-  colourId: 'navy',
-  fontFamily: 'Playfair Display',
-  lakeId: null,
-  lakeName: DEFAULT_LAKE_DATA.lakeName,
-  region: DEFAULT_LAKE_DATA.region,
-  rotation: 0,
-  zoom: 1,
-  panX: 0,
-  panY: 0,
-  lat: DEFAULT_LAKE_DATA.lat,
-  lon: DEFAULT_LAKE_DATA.lon,
-  osmType: DEFAULT_LAKE_DATA.osmType,
-  osmId: DEFAULT_LAKE_DATA.osmId,
-  geojson: null
-};
-
+// Global variables
+let state = {};
 let searchDebounceTimer = null;
-let coloursData = { colours: {} };
 
 // DOM Elements
 const lakeSearchInput = document.getElementById('lake-search');
@@ -85,63 +31,120 @@ const rotateRightButton = document.getElementById('rotate-right');
 const resetButton = document.getElementById('reset-app-button');
 
 // ────────────────────────────────────────────────────────────────────────────
-// State Management (persistence like /map)
+// State Management
 // ────────────────────────────────────────────────────────────────────────────
 
-function loadLakeState() {
+/*
+ * Load the lake state using API
+ */
+async function loadLakeState() {
+
   try {
-    const saved = JSON.parse(localStorage.getItem(STATE_KEY) || 'null');
-    if (!saved) return;
 
-    if (typeof saved.colourId === 'string' && saved.colourId in coloursData.colours) {
-      state.colourId = saved.colourId;
+    // Load https://api.lakelines.co/design/:id and populate state with response
+    const response = await fetch(`https://api.lakelines.co/design/${designId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Design state load failed with status ${response.status}`);
     }
-    if (typeof saved.fontFamily === 'string') {
-      state.fontFamily = saved.fontFamily;
+
+    const data = await response.json();
+    const newState = data.design.state_json;
+
+    if (!newState) {
+      throw new Error('API response missing state field');
     }
-    if (typeof saved.lakeName === 'string') state.lakeName = saved.lakeName;
-    if (typeof saved.region === 'string') state.region = saved.region;
-    if (typeof saved.lat === 'number') state.lat = saved.lat;
-    if (typeof saved.lon === 'number') state.lon = saved.lon;
-    if (typeof saved.osmType === 'string') state.osmType = saved.osmType;
-    if (typeof saved.osmId === 'string') state.osmId = saved.osmId;
-    if (typeof saved.rotation === 'number') state.rotation = saved.rotation;
-    if (typeof saved.zoom === 'number') state.zoom = saved.zoom;
-    if (typeof saved.panX === 'number') state.panX = saved.panX;
-    if (typeof saved.panY === 'number') state.panY = saved.panY;
+
+    // Save state to global variable
+    state = Object.assign({}, newState);
+
+    console.log('[Load Lake State] Lake state loaded:', designId);
+
   } catch (error) {
-    // Ignore invalid storage
+    throw new Error(`Failed to load design state: ${error.message}`);
   }
+
 }
 
-function saveLakeState() {
-  localStorage.setItem(STATE_KEY, JSON.stringify({
-    colourId: state.colourId,
-    fontFamily: state.fontFamily,
-    lakeName: state.lakeName,
-    region: state.region,
-    lat: state.lat,
-    lon: state.lon,
-    rotation: state.rotation,
-    zoom: state.zoom,
-    panX: state.panX,
-    panY: state.panY,
-    osmType: state.osmType,
-    osmId: state.osmId
-  }));
+/*
+ * Save the lake state using the API
+ */
+async function saveLakeState() {
+
+  try {
+
+    // Load https://api.lakelines.co/design/edit and data with designId and state
+    const response = await fetch(`https://api.lakelines.co/design/edit`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ design_id: designId, state: state })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Design state save failed with status ${response.status}`);
+    }
+
+    console.log('[Save Lake State] Lake state saved:', designId);
+
+  } catch (error) {
+    throw new Error(`Failed to save design state: ${error.message}`);
+  }
+  
+}
+
+/*
+ * Reset the lake state back to the default
+ */
+async function resetLakeState() {
+
+  try {
+
+    // Load https://api.lakelines.co/design/reset and data with designId and state
+    const response = await fetch(`https://api.lakelines.co/design/reset`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ design_id: designId })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Design state reset failed with status ${response.status}`);
+    }
+
+    console.log('[Reset Lake State] Lake state reset:', designId);
+
+  } catch (error) {
+    throw new Error(`Failed to save design state: ${error.message}`);
+  }
+
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Document Scaling (reused pattern from /map)
+// Document Scaling
 // ────────────────────────────────────────────────────────────────────────────
+
+const ROTATION_STEP = 15;
+const ANIMATION_DURATION = 300;
+const ZOOM_STEP = 0.1;
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 3;
 
 function updateDocumentScale() {
+
   if (!previewContainer) return;
 
   // 3:4 portrait aspect ratio
   const ASPECT_WIDTH = 3;
   const ASPECT_HEIGHT = 4;
-  const docWidth = LAKE_DOCUMENT_BASE_WIDTH;
+  const docWidth = 600;
   const docHeight = Math.round(docWidth * (ASPECT_HEIGHT / ASPECT_WIDTH));
 
   // Set CSS variables for document size
@@ -160,9 +163,11 @@ function updateDocumentScale() {
 
   // Apply scale via CSS variable
   previewContainer.style.setProperty('--doc-scale', String(scale));
+
 }
 
 function setupDocumentScaleObserver() {
+
   if (!previewContainer || typeof ResizeObserver === 'undefined') return;
 
   const observer = new ResizeObserver(() => {
@@ -191,78 +196,63 @@ function setupDocumentScaleObserver() {
   } else {
     applyTransforms();
   }
+
 }
 
-const ROTATION_STEP = 15; // degrees per click
-
-// Animation constants (matching /map)
-const ANIMATION_DURATION = 300; // ms
-const ZOOM_STEP = 0.1; // 10% per click
-const MIN_ZOOM = 0.5;
-const MAX_ZOOM = 3;
-
 function applyTransforms() {
+
   if (!lakeSilhouetteArea) return;
-  
-  // Combine rotation, zoom, and pan into a single transform
   const transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.zoom}) rotate(${state.rotation}deg)`;
   lakeSilhouetteArea.style.transform = transform;
+
 }
 
 function applyRotation(deltaDegrees) {
+
   state.rotation = ((state.rotation || 0) + deltaDegrees) % 360;
   applyTransforms();
   saveLakeState();
+
 }
 
 function zoomIn() {
+
   state.zoom = Math.min(state.zoom + ZOOM_STEP, MAX_ZOOM);
   applyTransforms();
   saveLakeState();
+
 }
 
 function zoomOut() {
+
   state.zoom = Math.max(state.zoom - ZOOM_STEP, MIN_ZOOM);
   applyTransforms();
   saveLakeState();
+
 }
 
 function applyPan(dx, dy) {
+
   state.panX += dx;
   state.panY += dy;
   applyTransforms();
   saveLakeState();
+
 }
 
-function resetApp() {
+async function resetApp() {
+
   if (!confirm('Reset app and all settings to default? This cannot be undone.')) return;
   
-  // Reset lake to default
-  state.lakeName = DEFAULT_LAKE_DATA.lakeName;
-  state.region = DEFAULT_LAKE_DATA.region;
-  state.lat = DEFAULT_LAKE_DATA.lat;
-  state.lon = DEFAULT_LAKE_DATA.lon;
-  state.osmType = DEFAULT_LAKE_DATA.osmType;
-  state.osmId = DEFAULT_LAKE_DATA.osmId;
-  
-  // Reset transforms
-  state.rotation = 0;
-  state.zoom = 1;
-  state.panX = 0;
-  state.panY = 0;
-  
-  // Update UI
-  labelLakeName.value = state.lakeName;
-  labelRegion.value = state.region;
-  labelCoordinates.value = formatCoordinates(state.lat, state.lon);
-  
+  await resetLakeState();
+  await loadLakeState();
+
   applyTransforms();
-  saveLakeState();
   
-  // Reload lake geometry
   loadLakeGeometry().then(() => {
     renderPreview();
   });
+
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -270,6 +260,7 @@ function resetApp() {
 // ────────────────────────────────────────────────────────────────────────────
 
 function setupDragPan() {
+
   if (!lakeSilhouetteArea) return;
   
   let isDragging = false;
@@ -313,6 +304,7 @@ function setupDragPan() {
       lakeSilhouetteArea.style.cursor = '';
     }
   });
+
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -320,6 +312,7 @@ function setupDragPan() {
 // ────────────────────────────────────────────────────────────────────────────
 
 function setupMouseWheelZoom() {
+
   if (!lakeSilhouetteArea) return;
   
   // Use non-passive listener to allow preventDefault
@@ -340,6 +333,7 @@ function setupMouseWheelZoom() {
       saveLakeState();
     }
   }, { passive: false });
+
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -347,10 +341,13 @@ function setupMouseWheelZoom() {
 // ────────────────────────────────────────────────────────────────────────────
 
 function getColour() {
+
   return coloursData.colours[state.colourId] || coloursData.colours.navy;
+
 }
 
 function applyColour(colourId) {
+
   if (!(colourId in coloursData.colours)) return;
 
   state.colourId = colourId;
@@ -370,9 +367,11 @@ function applyColour(colourId) {
   }
 
   saveLakeState();
+
 }
 
 function renderThemeGrid() {
+
   if (!themeGrid) return;
 
   themeGrid.innerHTML = Object.entries(coloursData.colours).map(([colourId, colour]) => `
@@ -392,6 +391,7 @@ function renderThemeGrid() {
       renderThemeGrid(); // Re-render to show active state
     });
   });
+
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -399,6 +399,7 @@ function renderThemeGrid() {
 // ────────────────────────────────────────────────────────────────────────────
 
 async function fetchLakeSearch(query) {
+
   if (query.length < 2) {
     lakeSearchResults.innerHTML = '';
     lakeSearchResults.hidden = true;
@@ -416,9 +417,11 @@ async function fetchLakeSearch(query) {
     lakeSearchResults.innerHTML = '<li>Search failed. Try again.</li>';
     lakeSearchResults.hidden = false;
   }
+
 }
 
 function renderLakeSearchResults(results) {
+  
   if (!Array.isArray(results) || results.length === 0) {
     lakeSearchResults.replaceChildren();
     const item = document.createElement('li');
@@ -452,9 +455,11 @@ function renderLakeSearchResults(results) {
   });
 
   lakeSearchResults.hidden = false;
+
 }
 
 async function selectLakeFromSearch(lake) {
+
   lakeSearchInput.value = '';
   lakeSearchResults.hidden = true;
 
@@ -476,13 +481,17 @@ async function selectLakeFromSearch(lake) {
   // Load lake geometry
   await loadLakeGeometry();
   renderPreview();
+
 }
 
 function selectLakeSearchResult(result) {
+
   selectLakeFromSearch(result);
+
 }
 
 async function loadLakeGeometry() {
+
   if (!state.osmType || !state.osmId) {
     console.error('Lake selection incomplete');
     return;
@@ -500,34 +509,55 @@ async function loadLakeGeometry() {
     console.error('Lake geometry load error:', error);
     alert('Could not load lake silhouette. Try another lake.');
   }
+
 }
+
+lakeSearchInput.addEventListener('input', (e) => {
+
+  const query = e.target.value.trim();
+
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(() => {
+    fetchLakeSearch(query);
+  }, 300);
+
+});
+
+lakeSearchInput.addEventListener('keydown', (e) => {
+
+  if (e.key === 'Escape') {
+    lakeSearchInput.value = '';
+    lakeSearchResults.hidden = true;
+  }
+  
+});
 
 // ────────────────────────────────────────────────────────────────────────────
 // Label Management
 // ────────────────────────────────────────────────────────────────────────────
 
 labelLakeName.addEventListener('change', (e) => {
+
   state.lakeName = e.target.value;
   saveLakeState();
   renderPreview();
+
 });
 
 labelRegion.addEventListener('change', (e) => {
+
   state.region = e.target.value;
   saveLakeState();
   renderPreview();
-});
 
-function formatCoordinates(lat, lon) {
-  if (typeof lat !== 'number' || typeof lon !== 'number') return '';
-  return `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-}
+});
 
 // ────────────────────────────────────────────────────────────────────────────
 // Preview Rendering
 // ────────────────────────────────────────────────────────────────────────────
 
 function renderPreview() {
+
   // Update labels
   lakeLabelName.textContent = state.lakeName;
   lakeLabelRegion.textContent = state.region;
@@ -537,9 +567,11 @@ function renderPreview() {
   if (state.geojson) {
     renderLakeSilhouette(state.geojson);
   }
+
 }
 
 function fitLakeSilhouette(geojson) {
+
   if (!geojson || !geojson.coordinates) return { minLon: 0, maxLon: 100, minLat: 0, maxLat: 100, lonRange: 100, latRange: 100 };
   
   const type = geojson.type || '';
@@ -570,9 +602,11 @@ function fitLakeSilhouette(geojson) {
   const latRange = maxLat - minLat || 1;
   
   return { minLon, maxLon, minLat, maxLat, lonRange, latRange };
+
 }
 
 function renderLakeSilhouette(geojson) {
+
   lakeSilhouetteSvg.innerHTML = '';
 
   if (!geojson || !geojson.coordinates) {
@@ -603,32 +637,51 @@ function renderLakeSilhouette(geojson) {
   const { minLon, maxLon, minLat, maxLat, lonRange, latRange } = fitLakeSilhouette(geojson);
 
   // Normalize coordinates to SVG space (0-100) with padding
-  const padding = 5;
+  const basePadding = 5;
   function coordToSvg(lon, lat) {
-    const x = ((lon - minLon) / lonRange) * (100 - 2 * padding) + padding;
-    const y = ((maxLat - lat) / latRange) * (100 - 2 * padding) + padding;
+    const x = ((lon - minLon) / lonRange) * (100 - 2 * basePadding) + basePadding;
+    const y = ((maxLat - lat) / latRange) * (100 - 2 * basePadding) + basePadding;
     return { x, y };
   }
 
   // Create SVG paths for each ring (NO STROKE)
+  // Track the overall drawn bounds in SVG coordinates so we can zoom to-fit.
+  let drawMinX = Infinity, drawMinY = Infinity, drawMaxX = -Infinity, drawMaxY = -Infinity;
+
   rings.forEach((ring, ringIdx) => {
     if (ring.length < 2) return;
+    const pts = ring.map(([lon, lat]) => coordToSvg(lon, lat));
+    pts.forEach(p => {
+      drawMinX = Math.min(drawMinX, p.x);
+      drawMinY = Math.min(drawMinY, p.y);
+      drawMaxX = Math.max(drawMaxX, p.x);
+      drawMaxY = Math.max(drawMaxY, p.y);
+    });
 
-    const pathData = ring.map(([lon, lat], ptIdx) => {
-      const { x, y } = coordToSvg(lon, lat);
-      return `${ptIdx === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`;
-    }).join(' ') + ' Z';
+    const pathData = pts.map((p, ptIdx) => `${ptIdx === 0 ? 'M' : 'L'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ') + ' Z';
 
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('d', pathData);
     path.setAttribute('fill', colour.primary);
-    // NO stroke - clean silhouette
-    
     lakeSilhouetteSvg.appendChild(path);
   });
 
-  // Set viewBox to capture all content
-  lakeSilhouetteSvg.setAttribute('viewBox', '0 0 100 100');
+  // If we found bounds, compute a tight viewBox with a small padding so the silhouette
+  // fills the available SVG area as much as possible while remaining fully visible.
+  if (isFinite(drawMinX) && isFinite(drawMinY) && isFinite(drawMaxX) && isFinite(drawMaxY)) {
+    const w = drawMaxX - drawMinX || 1;
+    const h = drawMaxY - drawMinY || 1;
+    // add a small padding proportional to the larger dimension (2% of max dimension)
+    const pad = Math.max(1, Math.min(5, Math.max(w, h) * 0.02));
+    const vbX = Math.max(0, drawMinX - pad);
+    const vbY = Math.max(0, drawMinY - pad);
+    const vbW = Math.min(100, w + pad * 2);
+    const vbH = Math.min(100, h + pad * 2);
+    lakeSilhouetteSvg.setAttribute('viewBox', `${vbX.toFixed(2)} ${vbY.toFixed(2)} ${vbW.toFixed(2)} ${vbH.toFixed(2)}`);
+  } else {
+    lakeSilhouetteSvg.setAttribute('viewBox', '0 0 100 100');
+  }
+
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -636,6 +689,7 @@ function renderLakeSilhouette(geojson) {
 // ────────────────────────────────────────────────────────────────────────────
 
 function initAccordion() {
+
   if (!accordion) return;
 
   Array.from(accordion.querySelectorAll('.accordion-trigger')).forEach(trigger => {
@@ -659,6 +713,7 @@ function initAccordion() {
       panel.hidden = isExpanded;
     });
   });
+
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -666,6 +721,7 @@ function initAccordion() {
 // ────────────────────────────────────────────────────────────────────────────
 
 function applyFont(fontFamily) {
+
   state.fontFamily = fontFamily;
   
   // Apply font to all label text elements
@@ -681,18 +737,9 @@ labelFont.addEventListener('change', (e) => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────
-// Export
+// Top right buttons
 // ────────────────────────────────────────────────────────────────────────────
 
-exportPngButton.addEventListener('click', () => {
-  alert('PNG export coming soon');
-});
-
-exportSvgButton.addEventListener('click', () => {
-  alert('SVG export coming soon');
-});
-
-// Rotation, Zoom & Reset controls
 if (zoomInButton) {
   zoomInButton.addEventListener('click', () => {
     zoomIn();
@@ -707,13 +754,13 @@ if (zoomOutButton) {
 
 if (rotateLeftButton) {
   rotateLeftButton.addEventListener('click', () => {
-    applyRotation(-ROTATION_STEP);
+    applyRotation(ROTATION_STEP);
   });
 }
 
 if (rotateRightButton) {
   rotateRightButton.addEventListener('click', () => {
-    applyRotation(ROTATION_STEP);
+    applyRotation(-ROTATION_STEP);
   });
 }
 
@@ -724,52 +771,17 @@ if (resetButton) {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Search Event Handlers
-// ────────────────────────────────────────────────────────────────────────────
-
-lakeSearchInput.addEventListener('input', (e) => {
-  const query = e.target.value.trim();
-
-  clearTimeout(searchDebounceTimer);
-  searchDebounceTimer = setTimeout(() => {
-    fetchLakeSearch(query);
-  }, LAKE_SEARCH_DEBOUNCE_MS);
-});
-
-lakeSearchInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    lakeSearchInput.value = '';
-    lakeSearchResults.hidden = true;
-  }
-});
-
-// ────────────────────────────────────────────────────────────────────────────
-// Utilities
-// ────────────────────────────────────────────────────────────────────────────
-
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-// ────────────────────────────────────────────────────────────────────────────
-// Initialization
+// Lake Initialization
 // ────────────────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // Load colours data first
-  try {
-    const response = await fetch('/colours.json');
-    if (response.ok) {
-      coloursData = await response.json();
-    }
-  } catch (error) {
-    console.error('Failed to load colours.json:', error);
-  }
+  
+  await initApp();
+  await initOwner();
+  await initDesign();
 
   // Load saved state
-  loadLakeState();
+  await loadLakeState();
 
   // Setup UI
   setupDocumentScaleObserver();
@@ -780,8 +792,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Apply saved colour and font
   applyColour(state.colourId);
-  labelFont.value = state.fontFamily;
-  applyFont(state.fontFamily);
+
+  // Populate font select from loaded fonts.json
+  if (labelFont && fontsData && fontsData.fonts) {
+    labelFont.innerHTML = Object.keys(fontsData.fonts).map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join('');
+    labelFont.value = state.fontFamily;
+    applyFont(state.fontFamily);
+  }
 
   // Restore label inputs from state
   labelLakeName.value = state.lakeName;
@@ -800,4 +817,5 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   renderPreview();
+
 });

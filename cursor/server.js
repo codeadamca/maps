@@ -3,21 +3,25 @@ const path = require('path');
 require('dotenv').config();
 
 const app = express();
+
 const PORT = process.env.PORT || 3000;
-const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
-const MAPBOX_TOKEN = String(process.env.MAPBOX_TOKEN || '').trim();
 const DEBUG = /^true$/i.test(String(process.env.DEBUG || '').trim());
+const MAPBOX_TOKEN = String(process.env.MAPBOX_TOKEN || '').trim();
+
 const LAKE_SEARCH_CACHE_TTL_MS = 10 * 60 * 1000;
+const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
 const NOMINATIM_MIN_INTERVAL_MS = 1200;
 const NOMINATIM_RETRY_DELAY_MS = 5000;
+
 const lakeSearchCache = new Map();
 const lakeGeometryCache = new Map();
+
 let nominatimQueue = Promise.resolve();
 let nextNominatimRequestAt = 0;
 
 function getNominatimHeaders() {
   return {
-    Accept: 'application/json',
+    'Accept': 'application/json',
     'User-Agent': 'map-poster-app/1.0 (local development)'
   };
 }
@@ -128,6 +132,13 @@ function setCachedLakeGeometry(key, results) {
   setLakeCacheEntry(lakeGeometryCache, key, results);
 }
 
+/*
+  * Express routes
+  * - Serves static files for app frontend
+  * - Provides API endpoints for geocoding and lake data
+  * - Implements in-memory caching for lake search results and geometries
+  * - Proxies requests to Nominatim with rate limiting and retry handling
+  */
 app.get('/', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -136,7 +147,15 @@ app.get('/map', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'map.html'));
 });
 
+app.get('/map/:id', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'map.html'));
+});
+
 app.get('/lake', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'lake.html'));
+});
+
+app.get('/lake/:id', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'lake.html'));
 });
 
@@ -184,6 +203,13 @@ app.get('/api/search', async (req, res) => {
   }
 });
 
+/*
+  * Lake search and geometry endpoints
+  * - /api/lake-search?q=... : Searches for lakes matching query string
+  * - /api/lake-geometry?osmType=...&osmId=... : Retrieves geometry for specific lake
+  * - Implements caching and rate-limited proxying to Nominatim
+  * - Filters results to lake-like features in US and Canada
+  */
 app.get('/api/lake-search', async (req, res) => {
   const query = String(req.query.q || '').trim();
 
