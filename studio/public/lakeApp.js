@@ -24,12 +24,24 @@ const lakeSilhouetteArea = document.getElementById('lake-silhouette-area');
 const exportPngButton = document.getElementById('export-png');
 const exportSvgButton = document.getElementById('export-svg');
 const accordion = document.getElementById('sidebar-accordion');
-const zoomInButton = document.getElementById('zoom-in');
-const zoomOutButton = document.getElementById('zoom-out');
 const rotateLeftButton = document.getElementById('rotate-left');
 const rotateRightButton = document.getElementById('rotate-right');
 const resetButton = document.getElementById('reset-app-button');
 const deleteButton = document.getElementById('delete-button');
+
+// Create debug overlay for rotated bounds visualization
+// Position with fixed/absolute so we can manually apply screen-space transforms
+const debugBoundingBox = document.createElement('div');
+debugBoundingBox.id = 'debug-rotated-bounds';
+debugBoundingBox.style.cssText = `
+  position: fixed;
+  border: 2px solid red;
+  pointer-events: none;
+  display: none;
+  z-index: 9999;
+  box-sizing: border-box;
+`;
+document.body.appendChild(debugBoundingBox);
 
 // ────────────────────────────────────────────────────────────────────────────
 // State Management
@@ -185,9 +197,9 @@ async function deleteDesign() {
 
 const ROTATION_STEP = 15;
 const ANIMATION_DURATION = 300;
-const ZOOM_STEP = 0.1;
-const MIN_ZOOM = 0.5;
-const MAX_ZOOM = 3;
+// const ZOOM_STEP = 0.1;
+// const MIN_ZOOM = 0.5;
+// const MAX_ZOOM = 3;
 
 function updateDocumentScale() {
 
@@ -224,6 +236,10 @@ function setupDocumentScaleObserver() {
 
   const observer = new ResizeObserver(() => {
     updateDocumentScale();
+    // Reapply auto-fit layout when container resizes
+    if (state.geojson) {
+      applyAutoFitLayout();
+    }
   });
 
   observer.observe(previewContainer);
@@ -231,11 +247,14 @@ function setupDocumentScaleObserver() {
   // Initial scale calculation
   updateDocumentScale();
   
-  // Apply any saved rotation, zoom, and pan to silhouette only
+  // Apply any saved rotation to silhouette
   // Disable transitions during initial hydration to prevent animation on load
   if (lakeSilhouetteArea) {
     lakeSilhouetteArea.classList.add('no-transition');
     applyTransforms();
+    
+    // NOTE: Do NOT call applyAutoFitLayout() here - SVG viewBox is not yet set.
+    // It will be called by renderPreview() once lake geometry is loaded.
     
     // Re-enable transitions after a frame so user interactions animate normally
     requestAnimationFrame(() => {
@@ -253,33 +272,301 @@ function setupDocumentScaleObserver() {
 
 function applyTransforms() {
 
-  if (!lakeSilhouetteArea) return;
-  const transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.zoom}) rotate(${state.rotation}deg)`;
-  lakeSilhouetteArea.style.transform = transform;
+  if (!lakeSilhouetteSvg) return;
+  // Only apply rotation; zoom and pan are automatic based on geojson bounds
+  const transform = `rotate(${state.rotation}deg)`;
+  lakeSilhouetteSvg.style.transform = transform;
+
+}
+
+/**
+ * Calculate rotated bounding box of all points
+ * Returns {minX, maxX, minY, maxY} in the rotated coordinate space
+ */
+function calculateRotatedBounds(points, centerLon, centerLat, rotationDegrees) {
+
+  if (!points || points.length === 0) {
+    return { minX: 0, maxX: 1, minY: 0, maxY: 1 };
+  }
+
+  const angle = (rotationDegrees * Math.PI) / 180;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+
+  let minX = Infinity, maxX = -Infinity;
+  let minY = Infinity, maxY = -Infinity;
+
+  points.forEach(([lon, lat]) => {
+    const dx = lon - centerLon;
+    const dy = lat - centerLat;
+    const rotX = cos * dx - sin * dy;
+    const rotY = sin * dx + cos * dy;
+
+    minX = Math.min(minX, rotX);
+    maxX = Math.max(maxX, rotX);
+    minY = Math.min(minY, rotY);
+    maxY = Math.max(maxY, rotY);
+  });
+
+  return { minX, maxX, minY, maxY };
+
+}
+
+/**
+ * Calculate auto-fit layout (scale and offsets) for SVG rendering
+ * Ensures lake fits within canvas with consistent padding, accounting for rotation
+ * Returns scale, translate, and debug bounds for containment validation
+ */
+function calculateAutoFitLayout(svgElement, rotationDegrees) {
+
+  if (!svgElement) {
+    return { scale: 1, translateX: 0, translateY: 0, rotW: 100, rotH: 100, rotCenterX: 50, rotCenterY: 50 };
+  }
+
+  // Get current viewBox
+  const viewBox = svgElement.getAttribute('viewBox');
+  if (!viewBox) {
+    return { scale: 1, translateX: 0, translateY: 0, rotW: 100, rotH: 100, rotCenterX: 50, rotCenterY: 50 };
+  }
+
+  const parts = viewBox.split(/[\s,]+/);
+  const vbX = parseFloat(parts[0]) || 0;
+  const vbY = parseFloat(parts[1]) || 0;
+  const vbW = parseFloat(parts[2]) || 100;
+  const vbH = parseFloat(parts[3]) || 100;
+
+  // Get container size
+  const rect = lakeSilhouetteArea.getBoundingClientRect();
+  // Account for the padding on .lake-silhouette-area (20px on all sides)
+  const containerW = rect.width - 40;
+  const containerH = rect.height - 40;
+
+  if (containerW <= 0 || containerH <= 0) {
+    return { scale: 1, translateX: 0, translateY: 0, rotW: 100, rotH: 100, rotCenterX: 50, rotCenterY: 50 };
+  }
+
+  // Model the rendered lake content in the same pixel space the SVG uses on screen.
+  // The SVG element itself fills the silhouette area, while the viewBox content is
+  // centered inside it via preserveAspectRatio="xMidYMid meet".
+  const angle = (rotationDegrees * Math.PI) / 180;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+
+  const viewBoxAspect = vbW / vbH;
+  const containerAspect = containerW / containerH;
+
+  let renderedW = containerW;
+  let renderedH = containerH;
+
+  if (viewBoxAspect > containerAspect) {
+    renderedH = containerW / viewBoxAspect;
+  } else {
+    renderedW = containerH * viewBoxAspect;
+  }
+
+  // Rotate the rendered content box around its center.
+  const corners = [
+    { x: -renderedW / 2, y: -renderedH / 2 },
+    { x: renderedW / 2, y: -renderedH / 2 },
+    { x: renderedW / 2, y: renderedH / 2 },
+    { x: -renderedW / 2, y: renderedH / 2 }
+  ];
+
+  // Rotate corners around center and find bounds in rotated space
+  let rotMinX = Infinity, rotMaxX = -Infinity;
+  let rotMinY = Infinity, rotMaxY = -Infinity;
+
+  corners.forEach((corner) => {
+    const rotX = cos * corner.x - sin * corner.y;
+    const rotY = sin * corner.x + cos * corner.y;
+
+    rotMinX = Math.min(rotMinX, rotX);
+    rotMaxX = Math.max(rotMaxX, rotX);
+    rotMinY = Math.min(rotMinY, rotY);
+    rotMaxY = Math.max(rotMaxY, rotY);
+  });
+
+  const rotW = rotMaxX - rotMinX;
+  const rotH = rotMaxY - rotMinY;
+
+  // Safety check: ensure rotated dimensions are valid
+  if (rotW <= 0 || rotH <= 0) {
+    return { scale: 1, translateX: 0, translateY: 0, rotW: 100, rotH: 100, rotCenterX: 50, rotCenterY: 50 };
+  }
+
+  // Apply adaptive padding within the available space
+  const internalPadding = Math.max(10, Math.min(containerW, containerH) * 0.05);
+
+  // Scale to fit rotated bounds with internal padding
+  const scaleX = (containerW - 2 * internalPadding) / rotW;
+  const scaleY = (containerH - 2 * internalPadding) / rotH;
+  const scale = Math.max(0.05, Math.min(1.0, scaleX, scaleY));
+
+  // Calculate center of rotated bounds in rendered-pixel local space.
+  const rotCenterX = (rotMinX + rotMaxX) / 2;
+  const rotCenterY = (rotMinY + rotMaxY) / 2;
+
+  // The SVG content is already centered within the silhouette area by
+  // preserveAspectRatio="xMidYMid meet", so re-fit only needs to scale.
+  // Keep translation at zero to avoid drift during rotation.
+  const translateX = 0;
+  const translateY = 0;
+
+  return { 
+    scale, 
+    translateX, 
+    translateY, 
+    rotW, 
+    rotH, 
+    rotMinX,
+    rotMaxX,
+    rotMinY,
+    rotMaxY,
+    rotCenterX,
+    rotCenterY,
+    containerW,
+    containerH
+  };
+
+}
+
+/**
+ * Visualize the rotated bounding box for debugging
+ * Shows actual rendered bounds of the lake paths (after all CSS transforms)
+ * If the lake extends outside this box, the math in calculateAutoFitLayout() is wrong
+ */
+function visualizeDebugBounds(layout) {
+  
+  if (!debugBoundingBox || !lakeSilhouetteSvg) {
+    return;
+  }
+
+  // Get all the path elements (the actual lake geometry)
+  const paths = lakeSilhouetteSvg.querySelectorAll('path');
+  if (paths.length === 0) {
+    debugBoundingBox.style.display = 'none';
+    return;
+  }
+
+  // Get bounding client rect of all paths
+  // This gives us screen coordinates AFTER all CSS transforms are applied
+  let minScreenX = Infinity, minScreenY = Infinity;
+  let maxScreenX = -Infinity, maxScreenY = -Infinity;
+  
+  paths.forEach(path => {
+    const rect = path.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      minScreenX = Math.min(minScreenX, rect.left);
+      minScreenY = Math.min(minScreenY, rect.top);
+      maxScreenX = Math.max(maxScreenX, rect.right);
+      maxScreenY = Math.max(maxScreenY, rect.bottom);
+    }
+  });
+
+  if (!isFinite(minScreenX)) {
+    debugBoundingBox.style.display = 'none';
+    return;
+  }
+
+  // Get container position for reference
+  const containerRect = lakeSilhouetteArea.getBoundingClientRect();
+  
+  console.log('[DebugBounds] Lake paths screen bounds:', {
+    minX: minScreenX, minY: minScreenY,
+    maxX: maxScreenX, maxY: maxScreenY,
+    w: maxScreenX - minScreenX, h: maxScreenY - minScreenY
+  });
+  console.log('[DebugBounds] Container bounds:', {
+    left: containerRect.left, top: containerRect.top,
+    right: containerRect.right, bottom: containerRect.bottom,
+    w: containerRect.width, h: containerRect.height
+  });
+  
+  // Check if lake is within container
+  const withinX = minScreenX >= containerRect.left && maxScreenX <= containerRect.right;
+  const withinY = minScreenY >= containerRect.top && maxScreenY <= containerRect.bottom;
+  console.log('[DebugBounds] Lake within container:', { withinX, withinY });
+
+  // Position debug box to exactly match rendered lake bounds
+  debugBoundingBox.style.left = `${minScreenX}px`;
+  debugBoundingBox.style.top = `${minScreenY}px`;
+  debugBoundingBox.style.width = `${maxScreenX - minScreenX}px`;
+  debugBoundingBox.style.height = `${maxScreenY - minScreenY}px`;
+  debugBoundingBox.style.display = 'block';
+
+}
+
+/**
+ * Apply auto-fit layout based on current container size and rotation
+ * Applies correct transform order: translate, scale, rotate
+ */
+function applyAutoFitLayout() {
+
+  if (!lakeSilhouetteArea || !lakeSilhouetteSvg) return;
+  if (!state.geojson) return;
+
+  const layout = calculateAutoFitLayout(lakeSilhouetteSvg, state.rotation || 0);
+  
+  // Apply complete transform in correct order: translate → scale → rotate
+  // This ensures the lake scales around its rotated bounds center and stays centered
+  const transform = `translate(${layout.translateX}px, ${layout.translateY}px) scale(${layout.scale}) rotate(${state.rotation || 0}deg)`;
+  lakeSilhouetteSvg.style.transform = transform;
+  lakeSilhouetteSvg.style.transformOrigin = 'center center';
+  
+  // Update debug visualization
+  visualizeDebugBounds(layout);
+
+}
+
+/**
+ * Reframe lake after rotation
+ * Triggers smooth animated rotation, scaling, and translation to fit within bounds
+ */
+async function reframeAfterRotation() {
+
+  if (!lakeSilhouetteArea || !lakeSilhouetteSvg) return;
+
+  // Get auto-fit layout with complete transform for rotated bounds
+  const layout = calculateAutoFitLayout(lakeSilhouetteSvg, state.rotation);
+
+  // Enable smooth animation for all transform components
+  lakeSilhouetteSvg.style.transition = 'transform 300ms ease-out';
+  lakeSilhouetteSvg.style.transformOrigin = 'center center';
+  
+  // Apply complete transform in correct order: translate → scale → rotate
+  const transform = `translate(${layout.translateX}px, ${layout.translateY}px) scale(${layout.scale}) rotate(${state.rotation}deg)`;
+  lakeSilhouetteSvg.style.transform = transform;
+
+  console.log('[Reframe After Rotation] Applied transform:', transform, 'scale:', layout.scale, 'rotate:', state.rotation);
+
+  // Update debug visualization
+  visualizeDebugBounds(layout);
+
+  // After transition ends, remove transition to avoid interfering with future animations
+  return new Promise((resolve) => {
+    const onTransitionEnd = () => {
+      lakeSilhouetteSvg.removeEventListener('transitionend', onTransitionEnd);
+      lakeSilhouetteSvg.style.transition = '';
+      resolve();
+    };
+    lakeSilhouetteSvg.addEventListener('transitionend', onTransitionEnd);
+    // Fallback timeout in case transitionend doesn't fire
+    setTimeout(() => {
+      lakeSilhouetteSvg.removeEventListener('transitionend', onTransitionEnd);
+      lakeSilhouetteSvg.style.transition = '';
+      resolve();
+    }, 350);
+  });
 
 }
 
 function applyRotation(deltaDegrees) {
 
   state.rotation = ((state.rotation || 0) + deltaDegrees) % 360;
-  applyTransforms();
   saveLakeState();
-
-}
-
-function zoomIn() {
-
-  state.zoom = Math.min(state.zoom + ZOOM_STEP, MAX_ZOOM);
-  applyTransforms();
-  saveLakeState();
-
-}
-
-function zoomOut() {
-
-  state.zoom = Math.max(state.zoom - ZOOM_STEP, MIN_ZOOM);
-  applyTransforms();
-  saveLakeState();
+  
+  // Trigger full reframe animation
+  reframeAfterRotation();
 
 }
 
@@ -319,6 +606,7 @@ async function resetApp() {
 // Drag / Pan Functionality
 // ────────────────────────────────────────────────────────────────────────────
 
+/*
 function setupDragPan() {
 
   if (!lakeSilhouetteArea) return;
@@ -366,11 +654,13 @@ function setupDragPan() {
   });
 
 }
+  */
 
 // ────────────────────────────────────────────────────────────────────────────
 // Mouse Wheel Zoom (matching /map behavior)
 // ────────────────────────────────────────────────────────────────────────────
 
+/*
 function setupMouseWheelZoom() {
 
   if (!lakeSilhouetteArea) return;
@@ -395,6 +685,7 @@ function setupMouseWheelZoom() {
   }, { passive: false });
 
 }
+*/
 
 // ────────────────────────────────────────────────────────────────────────────
 // Colour System
@@ -626,6 +917,12 @@ function renderPreview() {
   // Render silhouette
   if (state.geojson) {
     renderLakeSilhouette(state.geojson);
+    
+    // Defer layout calculation to ensure container has been measured by browser
+    // This prevents getBoundingClientRect() from returning 0 or stale dimensions
+    requestAnimationFrame(() => {
+      applyAutoFitLayout();
+    });
   }
 
 }
@@ -800,6 +1097,7 @@ labelFont.addEventListener('change', (e) => {
 // Top right buttons
 // ────────────────────────────────────────────────────────────────────────────
 
+/*
 if (zoomInButton) {
   zoomInButton.addEventListener('click', () => {
     zoomIn();
@@ -811,6 +1109,7 @@ if (zoomOutButton) {
     zoomOut();
   });
 }
+*/
 
 if (rotateLeftButton) {
   rotateLeftButton.addEventListener('click', () => {
@@ -875,10 +1174,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   labelCoordinates.value = formatCoordinates(state.lat, state.lon);
 
   // Setup drag/pan functionality
-  setupDragPan();
+  // setupDragPan();
 
   // Setup mouse wheel zoom
-  setupMouseWheelZoom();
+  // setupMouseWheelZoom();
 
   // If a lake was previously selected, reload its geometry for rendering
   if (state.osmType && state.osmId && state.lakeName) {

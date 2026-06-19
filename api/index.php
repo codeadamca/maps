@@ -702,18 +702,26 @@ function get_design_svg($connect, $id) {
 }
 
 // ======================================================
-// PNG DESIGN THUMBNAIL (400x400)
+// PNG DESIGN THUMBNAIL
 // ======================================================
 /**
- * GET /design/thumb/:id
+ * GET /design/thumb/:id?width=W&height=H
  * 
- * Generates a 400x400 PNG thumbnail of a lake design.
- * Matches the studio preview rendering exactly using the same
- * geometry transformation logic.
- * 
- * Uses theme colors from design state:
- * - Background: theme.background
- * - Lake: theme.primary
+ * Generates a PNG thumbnail of a lake design with optional dynamic sizing.
+ * Supports query parameters for custom dimensions:
+ * - width: Canvas width in pixels (default: 400)
+ * - height: Canvas height in pixels (default: 400)
+ *
+ * Examples:
+ * - /design/thumb/LL-83C0E8E6 → 400x400 PNG
+ * - /design/thumb/LL-83C0E8E6?width=800&height=800 → 800x800 PNG
+ * - /design/thumb/LL-83C0E8E6?width=400&height=800 → 400x800 PNG
+ *
+ * Rendering:
+ * - Matches the studio preview rendering exactly
+ * - Uses same geometry transformation logic as lakeApp.js
+ * - Lake is centered and scaled to fit arbitrary canvas sizes
+ * - Preserves theme colors and user transforms (zoom, rotation, pan)
  * 
  * Returns: PNG image with proper Content-Type header
  * 
@@ -726,6 +734,26 @@ function get_design_thumb($connect, $id) {
     $debug_coords = isset($_GET['debug_coords']) ? true : false;
     $errors = [];
 
+    // Parse sizing parameters with defaults
+    $width = 400;
+    $height = 400;
+
+    if (isset($_GET['width'])) {
+        $w = intval($_GET['width']);
+        if ($w > 0 && $w <= 2000) {
+            $width = $w;
+        }
+    }
+
+    if (isset($_GET['height'])) {
+        $h = intval($_GET['height']);
+        if ($h > 0 && $h <= 2000) {
+            $height = $h;
+        }
+    }
+
+    error_log("[THUMB] GET /design/thumb/$id?width=$width&height=$height");
+
     try {
         $design = find_design($connect, $id);
 
@@ -735,8 +763,8 @@ function get_design_thumb($connect, $id) {
             }
             http_response_code(404);
             header('Content-Type: image/png');
-            // Return transparent 400x400 pixel PNG for 404
-            $img = imagecreatetruecolor(400, 400);
+            // Return transparent PNG for 404
+            $img = imagecreatetruecolor($width, $height);
             $transparent = imagecolorallocatealpha($img, 0, 0, 0, 127);
             imagefill($img, 0, 0, $transparent);
             ob_start();
@@ -813,7 +841,7 @@ function get_design_thumb($connect, $id) {
         if ($debug_coords) {
             $bounds = fit_geometry($geojson);
             $allPoints = collect_all_points($geojson['coordinates'] ?? []);
-            $transforms = create_transform_functions($allPoints, $bounds, $zoom, $rotation, $panX, $panY, 400, 400, 36);
+            $transforms = create_transform_functions($allPoints, $bounds, $zoom, $rotation, $panX, $panY, $width, $height, calculate_padding($width, $height));
             $toCanvas = $transforms['toCanvas'];
             $baseScale = $transforms['baseScale'];
             
@@ -863,8 +891,8 @@ function get_design_thumb($connect, $id) {
             ]);
         }
 
-        // Render PNG using GD
-        $image = render_lake_thumbnail($geojson, $backgroundColor, $lakeColor, $zoom, $rotation, $panX, $panY);
+        // Render PNG using GD with dynamic sizing
+        $image = render_lake_thumbnail($geojson, $backgroundColor, $lakeColor, $zoom, $rotation, $panX, $panY, $width, $height);
 
         // Generate PNG data
         ob_start();
@@ -891,7 +919,7 @@ function get_design_thumb($connect, $id) {
         // Return blank PNG on error
         http_response_code(500);
         header('Content-Type: image/png');
-        $img = imagecreatetruecolor(400, 400);
+        $img = imagecreatetruecolor($width, $height);
         $white = imagecolorallocate($img, 255, 255, 255);
         imagefill($img, 0, 0, $white);
         ob_start();

@@ -469,13 +469,13 @@ select:focus {
   flex: none;
 }
 
-/* Rotate only the lake silhouette, not the document or labels */
-.lake-silhouette-area {
+/* Keep the silhouette area stable; animate transforms on the SVG itself */
+.lake-silhouette-svg {
   transform-origin: center center;
   transition: transform 300ms ease;
 }
 
-.lake-silhouette-area.no-transition {
+.lake-silhouette-area.no-transition .lake-silhouette-svg {
   transition: none;
 }
 

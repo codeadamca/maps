@@ -520,9 +520,22 @@ function create_transform_functions($allPoints, $bounds, $zoom, $rotation, $panX
  * @param float $panY Pan y offset in pixels
  * @return resource GD image resource
  */
-function render_lake_thumbnail($geojson, $backgroundColor, $lakeColor, $zoom = 1.0, $rotation = 0, $panX = 0, $panY = 0) {
-    $width = 400;
-    $height = 400;
+/**
+ * Calculate padding for thumbnail based on canvas size
+ * Ensures consistent visual margins across different dimensions
+ * 
+ * @param int $width Canvas width in pixels
+ * @param int $height Canvas height in pixels
+ * @return int Padding in pixels (percent-based with minimum)
+ */
+function calculate_padding($width, $height) {
+    // Use 9% of the smallest dimension, minimum 18px
+    $smallest = min($width, $height);
+    $padding = max(18, intval($smallest * 0.09));
+    return $padding;
+}
+
+function render_lake_thumbnail($geojson, $backgroundColor, $lakeColor, $zoom = 1.0, $rotation = 0, $panX = 0, $panY = 0, $width = 400, $height = 400) {
 
     // Create image
     $image = imagecreatetruecolor($width, $height);
@@ -579,8 +592,9 @@ function render_lake_thumbnail($geojson, $backgroundColor, $lakeColor, $zoom = 1
         return $image;
     }
 
-    // Create transform function (use larger padding so thumbnail has equal breathing room)
-    $transforms = create_transform_functions($allPoints, $bounds, $zoom, $rotation, $panX, $panY, $width, $height, 36);
+    // Create transform function (calculate padding dynamically based on canvas size)
+    $padding = calculate_padding($width, $height);
+    $transforms = create_transform_functions($allPoints, $bounds, $zoom, $rotation, $panX, $panY, $width, $height, $padding);
     $toCanvas = $transforms['toCanvas'];
     $baseScale = $transforms['baseScale'];
 

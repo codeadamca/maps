@@ -37,7 +37,7 @@ async function loadDesigns() {
     console.log('[Load Designs] Designs loaded:', newDesigns);
 
     // If there are designs, remove large home page buttons and replace with design thums and links
-    if(newDesigns.length > 0 && false) {
+    if(newDesigns.length > 0) {
 
       noDesigns.hidden = true;
       hasDesigns.hidden = false;
