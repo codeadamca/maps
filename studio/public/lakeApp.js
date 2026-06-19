@@ -29,6 +29,7 @@ const zoomOutButton = document.getElementById('zoom-out');
 const rotateLeftButton = document.getElementById('rotate-left');
 const rotateRightButton = document.getElementById('rotate-right');
 const resetButton = document.getElementById('reset-app-button');
+const deleteButton = document.getElementById('delete-button');
 
 // ────────────────────────────────────────────────────────────────────────────
 // State Management
@@ -123,6 +124,57 @@ async function resetLakeState() {
 
   } catch (error) {
     throw new Error(`Failed to save design state: ${error.message}`);
+  }
+
+}
+
+/*
+ * Delete the current design
+ */
+async function deleteDesign() {
+
+  console.log('[Delete Design] Attempting to delete design:', designId);
+
+  const confirmed = await showConfirm({
+    title: 'Delete Design',
+    message: 'Are you sure you want to permanently delete this design? This action cannot be undone.',
+    confirmText: 'Delete',
+    cancelText: 'Cancel',
+    danger: true
+  });
+
+  if (!confirmed) {
+    console.log('[Delete Design] Delete cancelled by user');
+    return;
+  }
+
+  try {
+
+    console.log('[Delete Design] Sending delete request for design:', designId);
+
+    // Call the delete endpoint
+    const response = await fetch(`https://api.lakelines.co/design/delete/${designId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ design_id: designId })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Design deletion failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('[Delete Design] Design deleted successfully:', data);
+
+    // Navigate back to home page after successful deletion
+    console.log('[Delete Design] Redirecting to home page');
+    window.location.href = '/';
+
+  } catch (error) {
+    console.error('[Delete Design] Error deleting design:', error);
+    alert(`Failed to delete design: ${error.message}`);
   }
 
 }
@@ -242,7 +294,15 @@ function applyPan(dx, dy) {
 
 async function resetApp() {
 
-  if (!confirm('Reset app and all settings to default? This cannot be undone.')) return;
+  const confirmed = await showConfirm({
+    title: 'Reset Design',
+    message: 'Are you sure you want to reset this design? This action cannot be undone.',
+    confirmText: 'Reset',
+    cancelText: 'Cancel',
+    danger: true
+  });
+
+  if (!confirmed) return;
   
   await resetLakeState();
   await loadLakeState();
@@ -770,6 +830,12 @@ if (resetButton) {
   });
 }
 
+if (deleteButton) {
+  deleteButton.addEventListener('click', () => {
+    deleteDesign();
+  });
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Lake Initialization
 // ────────────────────────────────────────────────────────────────────────────
@@ -779,6 +845,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   await initApp();
   await initOwner();
   await initDesign();
+
+  // Initialize confirmation overlay
+  initConfirmationOverlay();
 
   // Load saved state
   await loadLakeState();

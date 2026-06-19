@@ -940,8 +940,15 @@ rotateRightButton.addEventListener('click', () => rotateMapBy(ROTATION_STEP));
 // Reset app: clear localStorage and reload (with confirmation)
 const resetButton = document.getElementById('reset-app-button');
 if (resetButton) {
-  resetButton.addEventListener('click', () => {
-    if (!confirm('Clear all saved settings and start fresh? This will remove local storage.')) return;
+  resetButton.addEventListener('click', async () => {
+    const confirmed = await showConfirm({
+      title: 'Reset Design',
+      message: 'Clear all saved settings and start fresh? This will remove local storage.',
+      confirmText: 'Reset',
+      cancelText: 'Cancel',
+      danger: true
+    });
+    if (!confirmed) return;
     try {
       localStorage.clear();
       sessionStorage.clear();
@@ -2073,6 +2080,9 @@ function initAccordion() {
 async function boot() {
   // Initialize owner and design on app startup
   await initApp();
+
+  // Initialize confirmation overlay
+  initConfirmationOverlay();
 
   loadViewState();
 

@@ -1308,3 +1308,144 @@ select:focus {
   width: 100%;
   text-align: center;
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Reusable Confirmation Overlay Component
+   ──────────────────────────────────────────────────────────────────────────── */
+
+.confirmation-backdrop {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.confirmation-backdrop.is-open {
+  display: flex;
+}
+
+.confirmation-modal {
+  background: var(--sidebar-bg);
+  border: 1px solid var(--sidebar-border);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  width: 90%;
+  max-width: 420px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: confirmation-slide-in 200ms ease;
+}
+
+@keyframes confirmation-slide-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.confirmation-header {
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid var(--sidebar-border);
+}
+
+.confirmation-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+
+.confirmation-body {
+  padding: 16px 24px;
+  flex: 1;
+}
+
+.confirmation-message {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--sidebar-text);
+  letter-spacing: 0.01em;
+}
+
+.confirmation-footer {
+  padding: 16px 24px 24px;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  border-top: 1px solid var(--sidebar-border);
+}
+
+.confirmation-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 160ms ease;
+  min-width: 100px;
+  text-align: center;
+}
+
+.confirmation-btn--cancel {
+  background: transparent;
+  color: var(--sidebar-text);
+  border: 1px solid var(--sidebar-border);
+}
+
+.confirmation-btn--cancel:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--sidebar-muted);
+}
+
+.confirmation-btn--cancel:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.confirmation-btn--confirm {
+  background: var(--accent);
+  color: #fff;
+}
+
+.confirmation-btn--confirm:hover {
+  filter: brightness(1.1);
+}
+
+.confirmation-btn--confirm:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  opacity: 0.9;
+}
+
+/* Danger variant for destructive actions */
+.confirmation-modal.is-danger .confirmation-btn--confirm,
+.confirmation-btn.is-danger {
+  background: #e85d5d;
+}
+
+.confirmation-modal.is-danger .confirmation-btn--confirm:hover,
+.confirmation-btn.is-danger:hover {
+  background: #f06060;
+  filter: none;
+}
+
+/* Focus visible styling for accessibility */
+.confirmation-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+

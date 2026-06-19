@@ -91,7 +91,7 @@ if ($method === 'GET' && $path === '/health') health($connect);
 if ($method === 'POST' && $path === '/owner/create') create_owner($connect);
 if ($method === 'GET' && preg_match('#^/owner/([^/]+)$#', $path, $m)) get_owner($connect, $m[1]);
 if ($method === 'POST' && $path === '/owner/edit') edit_owner($connect);
-if ($method === 'DELETE' && preg_match('#^/owner/([^/]+)$#', $path, $m)) delete_owner($connect, $m[1]);
+if ($method === 'DELETE' && preg_match('#^/owner/delete/([^/]+)$#', $path, $m)) delete_owner($connect, $m[1]);
 
 // ----------------------
 // DESIGN ROUTES
@@ -101,25 +101,11 @@ if ($method === 'POST' && $path === '/design/edit') edit_design($connect);
 if ($method === 'POST' && $path === '/design/reset') reset_design($connect);
 if ($method === 'POST' && $path === '/design/duplicate') duplicate_design($connect);
 
-if ($method === 'GET' && preg_match('#^/design/svg/([^/]+)$#', $path, $m)) {
-    get_design_svg($connect, $m[1]);
-}
-
-if ($method === 'GET' && preg_match('#^/design/thumb/([^/]+)$#', $path, $m)) {
-    get_design_thumb($connect, $m[1]);
-}
-
-if ($method === 'GET' && preg_match('#^/design/([^/]+)$#', $path, $m)) {
-    get_design($connect, $m[1]);
-}
-
-if ($method === 'GET' && preg_match('#^/designs/owner/([^/]+)$#', $path, $m)) {
-    get_designs_by_owner($connect, $m[1]);
-}
-
-if ($method === 'DELETE' && preg_match('#^/design/([^/]+)$#', $path, $m)) {
-    delete_design($connect, $m[1]);
-}
+if ($method === 'GET' && preg_match('#^/design/svg/([^/]+)$#', $path, $m)) get_design_svg($connect, $m[1]);
+if ($method === 'GET' && preg_match('#^/design/thumb/([^/]+)$#', $path, $m)) get_design_thumb($connect, $m[1]);
+if ($method === 'GET' && preg_match('#^/design/([^/]+)$#', $path, $m)) get_design($connect, $m[1]);
+if ($method === 'GET' && preg_match('#^/designs/owner/([^/]+)$#', $path, $m)) get_designs_by_owner($connect, $m[1]);
+if ($method === 'DELETE' && preg_match('#^/design/delete/([^/]+)$#', $path, $m)) delete_design($connect, $m[1]);
 
 // fallback
 respond(false, ["error" => "Route not found"]);

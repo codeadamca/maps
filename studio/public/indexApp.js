@@ -36,8 +36,8 @@ async function loadDesigns() {
 
     console.log('[Load Designs] Designs loaded:', newDesigns);
 
-    // If there are designs, remove large home page buttons and replace wiht design thums and links
-    if(newDesigns.length > 0) {
+    // If there are designs, remove large home page buttons and replace with design thums and links
+    if(newDesigns.length > 0 && false) {
 
       noDesigns.hidden = true;
       hasDesigns.hidden = false;
@@ -82,28 +82,10 @@ async function loadDesigns() {
         bgImg.style.pointerEvents = 'none';
         link.appendChild(bgImg);
 
-        const title = document.createElement('h2  ');
-        // Try to fetch the full design to extract the first label (title)
-        (async () => {
-          try {
-            const resp = await fetch(`https://api.lakelines.co/design/${design.design_id}`);
-            if (resp.ok) {
-              const j = await resp.json();
-              const state = j.design && j.design.state_json ? j.design.state_json : null;
-              let parsed = state;
-              if (typeof state === 'string') {
-                try { parsed = JSON.parse(state); } catch (e) { parsed = null; }
-              }
-              const firstLabel = parsed && Array.isArray(parsed.labels) && parsed.labels[0] ? parsed.labels[0] : null;
-              title.textContent = firstLabel || design.design_id;
-            } else {
-              title.textContent = design.design_id;
-            }
-          } catch (e) {
-            title.textContent = design.design_id;
-          }
-        })();
-
+        const title = document.createElement('h2');
+        // Try to fetch the full design to extract the first label (title)    
+        title.textContent = design.state_json.lakeName;
+    
         head.appendChild(title);
         // make sure content sits above the background image
         head.style.position = 'relative';
