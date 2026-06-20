@@ -19,18 +19,20 @@ async function initApp() {
 
   try {
 
-    const [colRes, fontsRes, themesRes, layoutsRes, iconsRes] = await Promise.all([
-      fetch('/data/colours.json'),
-      fetch('/data/fonts.json'),
-      fetch('/data/themes.json'),
-      fetch('/data/layouts.json'),
-      fetch('/data/icons.json')
+    const [colRes, fontsRes, themesRes, layoutsRes, layersRes, iconsRes] = await Promise.all([
+      fetch('https://api.lakelines.co/colours'),
+      fetch('https://api.lakelines.co/fonts'),
+      fetch('https://api.lakelines.co/themes'),
+      fetch('https://api.lakelines.co/layouts'),
+      fetch('https://api.lakelines.co/layers'),
+      fetch('https://api.lakelines.co/icons')
     ]);
     
     if (colRes.ok) coloursData = await colRes.json();
     if (fontsRes.ok) fontsData = await fontsRes.json();
     if (themesRes.ok) themesData = await themesRes.json();
     if (layoutsRes.ok) layoutsData = await layoutsRes.json();
+    if (layersRes.ok) layersData = await layersRes.json();
     if (iconsRes.ok) iconsData = await iconsRes.json();
 
   } catch (error) {

@@ -1,0 +1,31 @@
+[20-Jun-2026 18:33:25 UTC] PHP Fatal error:  Cannot redeclare get_themes() (previously declared in /home/zwillefn/api.lakelines.co/functions.php:161) in /home/zwillefn/api.lakelines.co/routes/data_themes.php on line 8
+[20-Jun-2026 18:34:07 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function get_colours(), 0 passed in /home/zwillefn/api.lakelines.co/routes/data_colours.php on line 9 and exactly 1 expected in /home/zwillefn/api.lakelines.co/routes/data_colours.php:8
+Stack trace:
+#0 /home/zwillefn/api.lakelines.co/routes/data_colours.php(9): get_colours()
+#1 /home/zwillefn/api.lakelines.co/index.php(77): get_colours()
+#2 {main}
+  thrown in /home/zwillefn/api.lakelines.co/routes/data_colours.php on line 8
+[20-Jun-2026 18:34:08 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function get_colours(), 0 passed in /home/zwillefn/api.lakelines.co/routes/data_colours.php on line 9 and exactly 1 expected in /home/zwillefn/api.lakelines.co/routes/data_colours.php:8
+Stack trace:
+#0 /home/zwillefn/api.lakelines.co/routes/data_colours.php(9): get_colours()
+#1 /home/zwillefn/api.lakelines.co/index.php(77): get_colours()
+#2 {main}
+  thrown in /home/zwillefn/api.lakelines.co/routes/data_colours.php on line 8
+[20-Jun-2026 18:34:08 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function get_colours(), 0 passed in /home/zwillefn/api.lakelines.co/routes/data_colours.php on line 9 and exactly 1 expected in /home/zwillefn/api.lakelines.co/routes/data_colours.php:8
+Stack trace:
+#0 /home/zwillefn/api.lakelines.co/routes/data_colours.php(9): get_colours()
+#1 /home/zwillefn/api.lakelines.co/index.php(77): get_colours()
+#2 {main}
+  thrown in /home/zwillefn/api.lakelines.co/routes/data_colours.php on line 8
+[20-Jun-2026 18:34:08 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function get_colours(), 0 passed in /home/zwillefn/api.lakelines.co/routes/data_colours.php on line 9 and exactly 1 expected in /home/zwillefn/api.lakelines.co/routes/data_colours.php:8
+Stack trace:
+#0 /home/zwillefn/api.lakelines.co/routes/data_colours.php(9): get_colours()
+#1 /home/zwillefn/api.lakelines.co/index.php(77): get_colours()
+#2 {main}
+  thrown in /home/zwillefn/api.lakelines.co/routes/data_colours.php on line 8
+[20-Jun-2026 18:34:09 UTC] PHP Fatal error:  Uncaught ArgumentCountError: Too few arguments to function get_colours(), 0 passed in /home/zwillefn/api.lakelines.co/routes/data_colours.php on line 9 and exactly 1 expected in /home/zwillefn/api.lakelines.co/routes/data_colours.php:8
+Stack trace:
+#0 /home/zwillefn/api.lakelines.co/routes/data_colours.php(9): get_colours()
+#1 /home/zwillefn/api.lakelines.co/index.php(77): get_colours()
+#2 {main}
+  thrown in /home/zwillefn/api.lakelines.co/routes/data_colours.php on line 8
