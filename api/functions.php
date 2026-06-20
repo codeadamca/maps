@@ -129,7 +129,7 @@ function default_design() {
  * @return array|null Array of colours or null if file not found or JSON parse fails.
  */
 function get_colours_data() {
-    $path = __DIR__ . '/json/colours.json';
+    $path = __DIR__ . '/assets/json/colours.json';
     if (!file_exists($path)) {
         echo $path;
         echo '<br>';
@@ -148,7 +148,7 @@ function get_colours_data() {
  * @return array|null Array of fonts or null if file not found or JSON parse fails.
  */
 function get_fonts_data() {
-    $path = __DIR__ . '/json/fonts.json';
+    $path = __DIR__ . '/assets/json/fonts.json';
     if (!file_exists($path)) {
         return null;
     }
@@ -163,7 +163,7 @@ function get_fonts_data() {
  * @return array|null Array of themes or null if file not found or JSON parse fails.
  */
 function get_themes_data() {
-    $path = __DIR__ . '/json/themes.json';
+    $path = __DIR__ . '/assets/json/themes.json';
     if (!file_exists($path)) {
         return null;
     }
@@ -178,7 +178,7 @@ function get_themes_data() {
  * @return array|null Array of layers or null if file not found or JSON parse fails.
  */
 function get_layers_data() {
-    $path = __DIR__ . '/json/layers.json';
+    $path = __DIR__ . '/assets/json/layers.json';
     if (!file_exists($path)) {
         return null;
     }
@@ -193,7 +193,7 @@ function get_layers_data() {
  * @return array|null Array of icons or null if file not found or JSON parse fails.
  */
 function get_icons_data() {
-    $path = __DIR__ . '/json/icons.json';
+    $path = __DIR__ . '/assets/json/icons.json';
     if (!file_exists($path)) {
         return null;
     }
@@ -208,7 +208,7 @@ function get_icons_data() {
  * @return array|null Array of layouts or null if file not found or JSON parse fails.
  */
 function get_layouts_data() {
-    $path = __DIR__ . '/json/layouts.json';
+    $path = __DIR__ . '/assets/json/layouts.json';
     if (!file_exists($path)) {
         return null;
     }

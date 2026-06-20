@@ -5,7 +5,7 @@
  * @param mysqli $connect Unused DB connection.
  * @return void Outputs JSON and exits.
  */
-function get_icons($connect) {
+function get_icons() {
     $icons = get_icons_data();
     if (!$icons) {
         respond(false, ["error" => "Icons data not found"]);

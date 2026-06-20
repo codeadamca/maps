@@ -5,7 +5,7 @@
  * @param mysqli $connect Unused DB connection.
  * @return void Outputs JSON and exits.
  */
-function get_themes($connect) {
+function get_themes() {
     $themes = get_themes_data();
     if (!$themes) {
         respond(false, ["error" => "Themes data not found"]);

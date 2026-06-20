@@ -5,7 +5,7 @@
  * @param mysqli $connect Unused DB connection.
  * @return void Outputs JSON and exits.
  */
-function get_layouts($connect) {
+function get_layouts() {
     $layouts = get_layouts_data();
     if (!$layouts) {
         respond(false, ["error" => "Layouts data not found"]);

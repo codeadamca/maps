@@ -35,7 +35,7 @@ function get_design_ceramic_mug($connect, $id) {
         $state = $design['state_json'];
 
         $colour = $state['colour'] ?? '#000000';
-        $fontPath = __DIR__ . "/../fonts/CormorantGaramond-Regular.ttf";
+        $fontPath = __DIR__ . "/../assets/fonts/CormorantGaramond-Regular.ttf";
 
         if (!file_exists($fontPath)) {
             error_log("[CERAMIC_MUG] Font not found: " . $fontPath);

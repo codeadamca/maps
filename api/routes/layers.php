@@ -5,7 +5,7 @@
  * @param mysqli $connect Unused DB connection.
  * @return void Outputs JSON and exits.
  */
-function get_layers($connect) {
+function get_layers() {
     $layers = get_layers_data();
     if (!$layers) {
         respond(false, ["error" => "Layers data not found"]);

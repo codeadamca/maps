@@ -5,7 +5,7 @@
  * @param mysqli $connect Unused DB connection.
  * @return void Outputs JSON and exits.
  */
-function get_fonts($connect) {
+function get_fonts() {
     $fonts = get_fonts_data();
     if (!$fonts) {
         respond(false, ["error" => "Fonts data not found"]);

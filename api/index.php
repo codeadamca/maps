@@ -74,11 +74,11 @@ if ($method === 'GET' && preg_match('#^/designs/owner/([^/]+)$#', $path, $m)) ge
 if ($method === 'DELETE' && preg_match('#^/design/delete/([^/]+)$#', $path, $m)) delete_design($connect, $m[1]);
 
 // Static studio data (moved from studio/public/data)
-if ($method === 'GET' && $path === '/colours') get_colours($connect);
-if ($method === 'GET' && $path === '/fonts') get_fonts($connect);
-if ($method === 'GET' && $path === '/icons') get_icons($connect);
-if ($method === 'GET' && $path === '/layers') get_layers($connect);
-if ($method === 'GET' && $path === '/layouts') get_layouts($connect);
-if ($method === 'GET' && $path === '/themes') get_themes($connect);
+if ($method === 'GET' && $path === '/colours') get_colours();
+if ($method === 'GET' && $path === '/fonts') get_fonts();
+if ($method === 'GET' && $path === '/icons') get_icons();
+if ($method === 'GET' && $path === '/layers') get_layers();
+if ($method === 'GET' && $path === '/layouts') get_layouts();
+if ($method === 'GET' && $path === '/themes') get_themes();
 
 respond(false, ["error" => "Route not found"]);
