@@ -4,6 +4,8 @@
 // Global variables
 let state = {};
 let searchDebounceTimer = null;
+// Display rotation used for animation (may exceed 0-359 during animation)
+let displayRotation = 0;
 
 // DOM Elements
 const lakeSearchInput = document.getElementById('lake-search');
@@ -273,8 +275,8 @@ function setupDocumentScaleObserver() {
 function applyTransforms() {
 
   if (!lakeSilhouetteSvg) return;
-  // Only apply rotation; zoom and pan are automatic based on geojson bounds
-  const transform = `rotate(${state.rotation}deg)`;
+  // Only apply rotation; use displayRotation (may be animated)
+  const transform = `rotate(${displayRotation}deg)`;
   lakeSilhouetteSvg.style.transform = transform;
 
 }
@@ -395,7 +397,8 @@ function calculateAutoFitLayout(svgElement, rotationDegrees) {
   }
 
   // Apply adaptive padding within the available space
-  const internalPadding = Math.max(10, Math.min(containerW, containerH) * 0.05);
+  // Reduced by 75% from 5% to 1.25% to minimize outer padding
+  const internalPadding = Math.max(5, Math.min(containerW, containerH) * 0.0125);
 
   // Scale to fit rotated bounds with internal padding
   const scaleX = (containerW - 2 * internalPadding) / rotW;
@@ -527,14 +530,15 @@ async function reframeAfterRotation() {
   if (!lakeSilhouetteArea || !lakeSilhouetteSvg) return;
 
   // Get auto-fit layout with complete transform for rotated bounds
-  const layout = calculateAutoFitLayout(lakeSilhouetteSvg, state.rotation);
+  // Use displayRotation when computing layout to match animated/display angle
+  const layout = calculateAutoFitLayout(lakeSilhouetteSvg, displayRotation || state.rotation);
 
   // Enable smooth animation for all transform components
   lakeSilhouetteSvg.style.transition = 'transform 300ms ease-out';
   lakeSilhouetteSvg.style.transformOrigin = 'center center';
   
   // Apply complete transform in correct order: translate → scale → rotate
-  const transform = `translate(${layout.translateX}px, ${layout.translateY}px) scale(${layout.scale}) rotate(${state.rotation}deg)`;
+  const transform = `translate(${layout.translateX}px, ${layout.translateY}px) scale(${layout.scale}) rotate(${displayRotation || state.rotation}deg)`;
   lakeSilhouetteSvg.style.transform = transform;
 
   console.log('[Reframe After Rotation] Applied transform:', transform, 'scale:', layout.scale, 'rotate:', state.rotation);
@@ -561,13 +565,73 @@ async function reframeAfterRotation() {
 }
 
 function applyRotation(deltaDegrees) {
+  const prevLogical = (state.rotation || 0);
+  const logicalTarget = prevLogical + deltaDegrees; // Allow unbounded accumulation
 
-  state.rotation = ((state.rotation || 0) + deltaDegrees) % 360;
+  // Save logical rotation immediately (for persistence) but keep displayRotation for animation
+  state.rotation = logicalTarget;
   saveLakeState();
-  
-  // Trigger full reframe animation
-  reframeAfterRotation();
 
+  // Compute shortest angular delta from current displayed angle to target logical angle
+  const curDisplay = displayRotation;
+  // Smallest difference in range -180..180
+  const diff = ((logicalTarget - curDisplay + 540) % 360) - 180;
+  const targetDisplay = curDisplay + diff;
+
+  console.log('[Rotation] Previous:', curDisplay, 'TargetLogical:', logicalTarget, 'Animated Delta:', diff);
+
+  // Animate to computed target display angle
+  animateRotationTo(targetDisplay, logicalTarget);
+
+}
+
+/**
+ * Animate rotation to a display angle (may be outside 0-359) then normalize
+ * @param {number} targetDisplay - target angle for animation (can exceed 360)
+ * @param {number} logicalTarget - normalized logical angle 0-359 to store
+ */
+function animateRotationTo(targetDisplay, logicalTarget) {
+  if (!lakeSilhouetteSvg) return Promise.resolve();
+
+  // Set transition and compute layout for the animated target angle
+  lakeSilhouetteSvg.style.transition = `transform ${ANIMATION_DURATION}ms ease-out`;
+  const layout = calculateAutoFitLayout(lakeSilhouetteSvg, targetDisplay);
+  const transform = `translate(${layout.translateX}px, ${layout.translateY}px) scale(${layout.scale}) rotate(${targetDisplay}deg)`;
+
+  // Apply transform to start animation
+  // Ensure displayRotation reflects start->end animation tracking
+  lakeSilhouetteSvg.style.transform = transform;
+
+  // Log debug info
+  console.log('[Rotation][Animate] From:', displayRotation, 'To(display):', targetDisplay, 'Logical target:', logicalTarget);
+
+  return new Promise((resolve) => {
+    const onEnd = () => {
+      lakeSilhouetteSvg.removeEventListener('transitionend', onEnd);
+      lakeSilhouetteSvg.style.transition = '';
+
+      // After animation, displayRotation matches the animation target (unbounded)
+      displayRotation = targetDisplay;
+
+      // Re-apply final layout with animation target angle (no transition)
+      const finalLayout = calculateAutoFitLayout(lakeSilhouetteSvg, displayRotation);
+      lakeSilhouetteSvg.style.transform = `translate(${finalLayout.translateX}px, ${finalLayout.translateY}px) scale(${finalLayout.scale}) rotate(${displayRotation}deg)`;
+
+      resolve();
+    };
+
+    lakeSilhouetteSvg.addEventListener('transitionend', onEnd);
+
+    // Fallback in case transitionend doesn't fire
+    setTimeout(() => {
+      lakeSilhouetteSvg.removeEventListener('transitionend', onEnd);
+      lakeSilhouetteSvg.style.transition = '';
+      displayRotation = targetDisplay;
+      const finalLayout = calculateAutoFitLayout(lakeSilhouetteSvg, displayRotation);
+      lakeSilhouetteSvg.style.transform = `translate(${finalLayout.translateX}px, ${finalLayout.translateY}px) scale(${finalLayout.scale}) rotate(${displayRotation}deg)`;
+      resolve();
+    }, ANIMATION_DURATION + 120);
+  });
 }
 
 function applyPan(dx, dy) {
@@ -1183,6 +1247,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (state.osmType && state.osmId && state.lakeName) {
     await loadLakeGeometry();
   }
+
+  // Initialize displayRotation from logical state before first render
+  displayRotation = typeof state.rotation === 'number' ? state.rotation : 0;
 
   renderPreview();
 

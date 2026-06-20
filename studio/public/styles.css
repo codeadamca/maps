@@ -1202,7 +1202,7 @@ select:focus {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  padding: 20px;
+  padding: 5px;
   position: relative;
   z-index: 1;
 }
