@@ -37,7 +37,7 @@ const debugBoundingBox = document.createElement('div');
 debugBoundingBox.id = 'debug-rotated-bounds';
 debugBoundingBox.style.cssText = `
   position: fixed;
-  border: 2px solid red;
+  /*border: 2px solid red;*/
   pointer-events: none;
   display: none;
   z-index: 9999;

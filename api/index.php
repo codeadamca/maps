@@ -70,10 +70,12 @@ if ($method === 'POST' && $path === '/design/duplicate') duplicate_design($conne
 if ($method === 'GET' && preg_match('#^/design/lake/png/([^/]+)$#', $path, $m)) get_design_lake_png($connect, $m[1]);
 if ($method === 'GET' && preg_match('#^/design/lake/svg/([^/]+)$#', $path, $m)) get_design_lake_svg($connect, $m[1]);
 if ($method === 'GET' && preg_match('#^/design/thumb/([^/]+)$#', $path, $m)) get_design_thumb($connect, $m[1]);
-if ($method === 'GET' && preg_match('#^/design/ceramic-mug/([^/]+)$#', $path, $m)) get_design_ceramic_mug($connect, $m[1]);
 if ($method === 'GET' && preg_match('#^/design/([^/]+)$#', $path, $m)) get_design($connect, $m[1]);
 if ($method === 'GET' && preg_match('#^/designs/owner/([^/]+)$#', $path, $m)) get_designs_by_owner($connect, $m[1]);
 if ($method === 'DELETE' && preg_match('#^/design/delete/([^/]+)$#', $path, $m)) delete_design($connect, $m[1]);
+
+if ($method === 'GET' && preg_match('#^/design/ceramic-mug/([^/]+)$#', $path, $m)) get_design_ceramic_mug($connect, $m[1]);
+if ($method === 'GET' && preg_match('#^/design/spiral-notebook/([^/]+)$#', $path, $m)) get_design_spiral_notebook($connect, $m[1]);
 
 // Static studio data (moved from studio/public/data)
 if ($method === 'GET' && $path === '/colours') get_colours();
