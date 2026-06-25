@@ -41,6 +41,7 @@ mysqli_set_charset($connect, "utf8mb4");
 // Load shared helpers
 require_once __DIR__.'/functions.php';
 require_once __DIR__.'/thumbnail-helpers.php';
+require_once __DIR__.'/render-helpers.php';
 
 // Auto-include route handlers
 $routesDir = __DIR__.'/routes';
@@ -66,7 +67,8 @@ if ($method === 'POST' && $path === '/design/create') create_design($connect);
 if ($method === 'POST' && $path === '/design/edit') edit_design($connect);
 if ($method === 'POST' && $path === '/design/reset') reset_design($connect);
 if ($method === 'POST' && $path === '/design/duplicate') duplicate_design($connect);
-if ($method === 'GET' && preg_match('#^/design/svg/([^/]+)$#', $path, $m)) get_design_svg($connect, $m[1]);
+if ($method === 'GET' && preg_match('#^/design/lake/png/([^/]+)$#', $path, $m)) get_design_lake_png($connect, $m[1]);
+if ($method === 'GET' && preg_match('#^/design/lake/svg/([^/]+)$#', $path, $m)) get_design_lake_svg($connect, $m[1]);
 if ($method === 'GET' && preg_match('#^/design/thumb/([^/]+)$#', $path, $m)) get_design_thumb($connect, $m[1]);
 if ($method === 'GET' && preg_match('#^/design/ceramic-mug/([^/]+)$#', $path, $m)) get_design_ceramic_mug($connect, $m[1]);
 if ($method === 'GET' && preg_match('#^/design/([^/]+)$#', $path, $m)) get_design($connect, $m[1]);

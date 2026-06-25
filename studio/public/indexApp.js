@@ -82,7 +82,7 @@ async function loadDesigns() {
         bgImg.style.pointerEvents = 'none';
         link.appendChild(bgImg);
 
-        const title = document.createElement('h2');
+        const title = document.createElement('h3');
         // Try to fetch the full design to extract the first label (title)    
         title.textContent = design.state_json.lakeName;
     

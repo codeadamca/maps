@@ -13,90 +13,128 @@ function get_design_ceramic_mug($connect, $id) {
     error_log("[CERAMIC_MUG] GET /design/ceramic-mug/$id");
 
     try {
-        // Load design
+
+        $urlFontPath = __DIR__ . "/../assets/fonts/Inter-Regular.ttf";
+        
+        // Design
         $design = find_design($connect, $id);
 
         if (!$design) {
             http_response_code(404);
-            header('Content-Type: image/png');
-            // Return transparent PNG for 404
-            $img = imagecreatetruecolor(2475, 1155);
-            $transparent = imagecolorallocatealpha($img, 0, 0, 0, 127);
-            imagefill($img, 0, 0, $transparent);
-            ob_start();
-            imagepng($img);
-            $data = ob_get_clean();
-            imagedestroy($img);
-            echo $data;
-            exit;
+            respond(false, ["error" => "Design not found"]);
         }
 
         // Extract state
         $state = $design['state_json'];
 
-        $colour = $state['colour'] ?? '#000000';
-        $fontPath = __DIR__ . "/../assets/fonts/CormorantGaramond-Regular.ttf";
+        if (!$design) {
+            http_response_code(404);
+            respond(false, ["error" => "Design state not found"]);
+        }
+
+        // Colours
+        $colours = get_colours_data();
+        $colour = $colours['colours'][$state['colourId']]['primary'];
+
+        // Fonts
+        $fonts = get_fonts_data();
+        $font = $fonts['fonts'][$state['fontFamily']]['local'];
+        $fontPath = __DIR__ . "/../assets/fonts/".$font;
 
         if (!file_exists($fontPath)) {
             error_log("[CERAMIC_MUG] Font not found: " . $fontPath);
+            respond(false, ["error" => "Font not found"]);
         }
 
+        $markPath = __DIR__ . "/../assets/images/lakelines_mark.png";
 
-        if (!is_array($state)) {
-            http_response_code(400);
-            header('Content-Type: image/png');
-            $img = imagecreatetruecolor(2475, 1155);
-            $transparent = imagecolorallocatealpha($img, 0, 0, 0, 127);
-            imagefill($img, 0, 0, $transparent);
-            ob_start();
-            imagepng($img);
-            $data = ob_get_clean();
-            imagedestroy($img);
-            echo $data;
-            exit;
+        if (!file_exists($markPath)) {
+            error_log("[CERAMIC_MUG] Logo not found: " . $markPath);
+            respond(false, ["error" => "Logo    not found"]);
         }
+
+        $lakePath = 'https://api.lakelines.co/design/lake/png/'.$id.'?width=1155&height=1155';
 
         // Extract lake name
-        $lakeName = $state['lakeName'] ?? 'Unknown Lake';
+        $lakeName = $state['lakeName'];
+        $region = $state['region'];
+        $latLon = $state['lat'].', '.$state['lon'];
 
         // Create canvas (2475 x 1155 px at 300 DPI)
         $width = 2475;
         $height = 1155;
         $image = imagecreatetruecolor($width, $height);
-        imageantialias($image, true);
 
-        // Allocate colors
-        $transparent = imagecolorallocatealpha($image, 0, 0, 0, 127);
-        $blackColor = imagecolorallocate($image, 0, 0, 0);
-
-        // Fill with transparent background
-        imagefill($image, 0, 0, $transparent);
+        // Enable alpha channel
+        imagealphablending($image, false);
         imagesavealpha($image, true);
 
-        // Render lake name text
-        // Position: x=100, y=150
-        // Font: Use built-in GD font for basic rendering
-        // For high-DPI output, we need larger font size
-        // GD built-in fonts: 1-5 (1=smallest, 5=largest)
-        // For 2475px width, we'll use a custom approach with imagestring or ttf
+        // Fully transparent background
+        $transparent = imagecolorallocatealpha($image, 255, 255, 255, 127);
+        imagefill($image, 0, 0, $transparent);
 
-        // Using built-in font 5 (largest GD font)
-        $textX = 100;
-        $textY = 150;
-        $fontSize = 120; // adjust later for design tuning
+        // Enable anti-aliasing for drawing
+        imageantialias($image, true);
 
-        imagettftext(
+        // Add lake name
+        $boxX = 30;
+        $boxY = 10;
+        $boxWidth = 1200;
+ 
+        add_center_text(
             $image,
-            $fontSize,
-            0, // angle
-            $textX,
-            $textY,
-            $blackColor,
+            30,
+            270,
+            1200,
+            $colour,
+            65,
             $fontPath,
-            $lakeName
+            $lakeName); 
+
+        add_center_text(
+            $image,
+            30,
+            400,
+            1200,
+            $colour,
+            45,
+            $fontPath,
+            $region); 
+
+        add_center_text(
+            $image,
+            30,
+            490,
+            1200,
+            $colour,
+            65,
+            $fontPath,
+            $latLon); 
+
+        add_text(
+            $image,
+            590,
+            833,
+            $colour,
+            30,
+            $urlFontPath,
+            'lakelines.co'); 
+
+        add_image(
+            $image,
+            470,
+            770,
+            $markPath,
+            100,
+            100
         );
 
-        // imagestring($image, 5, $textX, $textY, $lakeName, $blackColor);
+        add_remote_image(
+            $image,
+            1267,
+            0,
+            $lakePath
+        );
 
         // Output PNG
         header('Content-Type: image/png');
@@ -110,16 +148,6 @@ function get_design_ceramic_mug($connect, $id) {
 
     } catch (Exception $e) {
         error_log("[CERAMIC_MUG] Exception: " . $e->getMessage());
-        http_response_code(500);
-        header('Content-Type: image/png');
-        $img = imagecreatetruecolor(2475, 1155);
-        $transparent = imagecolorallocatealpha($img, 0, 0, 0, 127);
-        imagefill($img, 0, 0, $transparent);
-        ob_start();
-        imagepng($img);
-        $data = ob_get_clean();
-        imagedestroy($img);
-        echo $data;
-        exit;
+        respond(false, ["error" => "Unknown error occurred"]);
     }
 }

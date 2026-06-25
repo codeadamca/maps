@@ -1,20 +1,13 @@
 <?php
 /**
  * Generate a PNG thumbnail for a design using GD.
- * Supports `width`, `height`, `gb` (lake color override), and debug query flags `debug` and `debug_coords`.
- *
- * Query parameters:
- *   - width: thumbnail width (1-2000, default 400)
- *   - height: thumbnail height (1-2000, default 400)
- *   - gb: lake shape color override in hex format (#rrggbb or #rgb)
- *   - debug: output design state as JSON instead of PNG
- *   - debug_coords: output coordinate transform debug info as JSON
+ * Supports `width`, `height`, and debug query flags `debug` and `debug_coords`.
  *
  * @param mysqli $connect MySQLi connection resource.
  * @param string $id Design identifier.
  * @return void Outputs PNG (or JSON in debug) and exits.
  */
-function get_design_thumb($connect, $id) {
+function get_design_lake_png($connect, $id) {
 
     // Parse sizing parameters with defaults
     $width = 400;
@@ -26,25 +19,22 @@ function get_design_thumb($connect, $id) {
     error_log("[THUMB] GET /design/thumb/$id?width=$width&height=$height");
 
     try {
+
         $design = find_design($connect, $id);
 
         if (!$design) {
-            if ($debug) {
-                respond(false, ["error" => "Design not found: $id"]);
-            }
+            respond(false, ["error" => "Design not found: $id"]);
         }
 
         // Validate state is array
         $state = $design['state_json'];
         if (!is_array($state)) {
             $errors[] = "state_json is not array: " . gettype($state);
-            if ($debug) {
-                respond(false, ["error" => "Invalid state: " . implode(", ", $errors)]);
-            }
+            respond(false, ["error" => "Invalid state: " . implode(", ", $errors)]);    
             $state = [];
         }
 
-        // Extract state fields (with defaults matching lakeApp.js)
+        // Extract state fields (with defaults mat  ching lakeApp.js)
         $colourId = $state['colourId'] ?? 'navy';
         $geojson = $state['geojson'] ?? null;
         $zoom = isset($state['zoom']) ? floatval($state['zoom']) : 1.0;
@@ -78,26 +68,6 @@ function get_design_thumb($connect, $id) {
         $theme = $coloursData[$colourId] ?? $coloursData['navy'] ?? [];
         $backgroundColor = $theme['background'] ?? '#FFFFFF';
         $lakeColor = $theme['primary'] ?? '#1F3B5C';
-
-        // Allow override of lake color via gb query parameter
-        if (isset($_GET['bg'])) {
-            $bgColor = $_GET['bg'];
-            // Validate hex color format (#rrggbb or #rgb)
-            if (preg_match('/^[0-9a-fA-F]{6}$/', $bgColor) || preg_match('/^#[0-9a-fA-F]{3}$/', $bgColor)) {
-                $backgroundColor = '#'.$bgColor;
-                error_log("[THUMB] Background color override: $backgroundColor");
-            }
-        }
-
-        // Allow override of lake color via gb query parameter
-        if (isset($_GET['colour'])) {
-            $bgColor = $_GET['colour'];
-            // Validate hex color format (#rrggbb or #rgb)
-            if (preg_match('/^[0-9a-fA-F]{6}$/', $bgColor) || preg_match('/^#[0-9a-fA-F]{3}$/', $bgColor)) {
-                $lakeColor = '#'.$bgColor;
-                error_log("[THUMB] Lake color override: $lakeColor");
-            }
-        }
 
         // Render PNG using GD with dynamic sizing
         $image = render_lake_thumbnail($geojson, $backgroundColor, $lakeColor, $zoom, $rotation, $panX, $panY, $width, $height);

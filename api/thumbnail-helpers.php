@@ -549,7 +549,14 @@ function render_lake_thumbnail($geojson, $backgroundColor, $lakeColor, $zoom = 1
     $lakeColorInt = imagecolorallocate($image, $lakeRgb['r'], $lakeRgb['g'], $lakeRgb['b']);
 
     // Fill background
-    imagefill($image, 0, 0, $bgColor);
+    // imagefill($image, 0, 0, $bgColor);
+
+    imagealphablending($image, false);
+    imagesavealpha($image, true);
+
+    // fully transparent background
+    $transparent = imagecolorallocatealpha($image, 255, 255, 255, 127);
+    imagefill($image, 0, 0, $transparent);
 
     if (!$geojson || !isset($geojson['coordinates'])) {
         error_log("[RENDER] No geojson or no coordinates");

@@ -107,7 +107,7 @@ function find_design($connect, $id) {
 function default_design() {
     return [
         'colourId' => 'navy',
-        'fontFamily' => 'Playfair Display',
+        'fontFamily' => 'playfair',
         'lakeId' => null,
         'lakeName' => 'Lake of the Ozarks',
         'region' => 'Missouri, Camden County, United States',

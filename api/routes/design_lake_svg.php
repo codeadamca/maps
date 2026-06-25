@@ -7,7 +7,7 @@
  * @param string $id Design identifier.
  * @return void Outputs SVG and exits.
  */
-function get_design_svg($connect, $id) {
+function get_design_lake_svg($connect, $id) {
 
     $design = find_design($connect, $id);
 
@@ -17,12 +17,6 @@ function get_design_svg($connect, $id) {
     }
 
     $state = $design['state_json'];
-
-    $label = "Untitled";
-
-    if (isset($state['labels'][0])) {
-        $label = $state['labels'][0];
-    }
 
     header("Content-Type: image/svg+xml");
 
@@ -36,6 +30,10 @@ function get_design_svg($connect, $id) {
         $decoded = json_decode($geo, true);
         if ($decoded !== null) $geo = $decoded;
     }
+
+    // Colours
+    $colours = get_colours_data();
+    $colour = $colours['colours'][$state['colourId']]['primary'];
 
     $paths = '';
 
@@ -163,14 +161,14 @@ function get_design_svg($connect, $id) {
                 foreach ($geo['coordinates'] as $ring) {
                     $d .= $buildPathFromRing($ring);
                 }
-                $paths .= '<path d="' . $d . '" fill="#ffffff" fill-rule="evenodd" stroke="#0b1b2b" stroke-width="1" />';
+                $paths .= '<path d="' . $d . '" fill="' . $colour . '" fill-rule="evenodd" stroke="#0b1b2b" stroke-width="1" />';
             } elseif ($type === 'MultiPolygon') {
                 foreach ($geo['coordinates'] as $poly) {
                     $d = '';
                     foreach ($poly as $ring) {
                         $d .= $buildPathFromRing($ring);
                     }
-                    $paths .= '<path d="' . $d . '" fill="#ffffff" fill-rule="evenodd" stroke="#0b1b2b" stroke-width="1" />';
+                    $paths .= '<path d="' . $d . '" fill="' . $colour . '" fill-rule="evenodd" stroke="#0b1b2b" stroke-width="1" />';
                 }
             } elseif ($type === 'LineString' || $type === 'MultiLineString') {
                 $lines = $geo['coordinates'];
@@ -184,7 +182,7 @@ function get_design_svg($connect, $id) {
                         if ($first) { $d .= 'M ' . $x . ' ' . $y . ' '; $first = false; }
                         else { $d .= 'L ' . $x . ' ' . $y . ' '; }
                     }
-                    $paths .= '<path d="' . $d . '" fill="none" stroke="#ffffff" stroke-width="1.5" />';
+                    $paths .= '<path d="' . $d . '" fill="none" stroke="' . $colour . '" stroke-width="1.5" />';
                 }
             } elseif ($type === 'Point' || $type === 'MultiPoint') {
                 $pts = $geo['coordinates'];
@@ -192,7 +190,7 @@ function get_design_svg($connect, $id) {
                 foreach ($pts as $pt) {
                     $x = $transformX($pt[0]);
                     $y = $transformY($pt[1]);
-                    $paths .= '<circle cx="' . $x . '" cy="' . $y . '" r="2" fill="#ffffff" />';
+                    $paths .= '<circle cx="' . $x . '" cy="' . $y . '" r="2" fill="' . $colour . '" />';
                 }
             }
         }
@@ -231,7 +229,7 @@ function get_design_svg($connect, $id) {
 
     echo '<svg width="' . $width . '" height="' . $height . '" xmlns="http://www.w3.org/2000/svg">
 
-            <rect width="' . $width . '" height="' . $height . '" fill="#0b1b2b"/>
+            <rect width="' . $width . '" height="' . $height . '" fill="transparent"/>
 
             ' . $paths . '
 

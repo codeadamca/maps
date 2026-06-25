@@ -5,7 +5,7 @@
  * @param mysqli $connect Unused DB connection (kept for uniform signature).
  * @return void Outputs JSON and exits.
  */
-function get_colours($connect) {
+function get_colours() {
     $colours = get_colours_data();
     if (!$colours) {
         respond(false, ["error" => "Colours data not found"]);

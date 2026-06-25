@@ -1,24 +1,24 @@
 {
     "fonts": {
-        "Playfair Display": {
+        "playfair": {
             "family": "Playfair Display",
             "weights": [600, 700],
             "url": "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/playfairdisplay/PlayfairDisplay%5Bwght%5D.ttf",
             "local": "PlayfairDisplay-Regular.ttf"
         },
-        "Inter": {
+        "inter": {
             "family": "Inter",
             "weights": [500, 700],
             "url": "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/inter/Inter%5Bopsz,wght%5D.ttf",
             "local": "Inter-Regular.ttf"
         },
-        "Roboto Condensed": {
+        "roboto": {
             "family": "Roboto Condensed",
             "weights": [400, 500, 700],
             "url": "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/robotocondensed/RobotoCondensed%5Bwght%5D.ttf",
             "local": "RobotoCondensed-Regular.ttf"
         },
-        "Cormorant Garamond": {
+        "cormorant": {
             "family": "Cormorant Garamond",
             "weights": [500, 600, 700],
             "url": "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/cormorantgaramond/CormorantGaramond%5Bwght%5D.ttf",

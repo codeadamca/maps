@@ -90,12 +90,12 @@ body {
   text-decoration: none;
 }
 
-.card h2 {
+.card h3 {  
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   margin: 0;
-  font-size: clamp(1.5rem, 3vw, 1.3rem);
+  font-size: clamp(1rem, 3vw, 1rem);
   line-height: 1;
 }
 

@@ -1141,14 +1141,29 @@ function initAccordion() {
 // Font Management
 // ────────────────────────────────────────────────────────────────────────────
 
-function applyFont(fontFamily) {
+function applyFont(fontKey) {
 
-  state.fontFamily = fontFamily;
+  state.fontFamily = fontKey;
   
-  // Apply font to all label text elements
-  if (lakeLabelName) lakeLabelName.style.fontFamily = `"${fontFamily}", serif`;
-  if (lakeLabelRegion) lakeLabelRegion.style.fontFamily = `"${fontFamily}", sans-serif`;
-  if (lakeLabelCoordinates) lakeLabelCoordinates.style.fontFamily = `"${fontFamily}", mono`;
+  // Look up the actual font family name from fontsData
+  // fontKey is the identifier (e.g. "playfair-display")
+  // but CSS needs the actual family name (e.g. "Playfair Display")
+  const fontConfig = fontsData.fonts[fontKey];
+  const familyName = fontConfig ? fontConfig.family : fontKey;
+  
+  // Apply font to all label text elements in the preview
+  if (lakeLabelName) lakeLabelName.style.fontFamily = `"${familyName}", serif`;
+  if (lakeLabelRegion) lakeLabelRegion.style.fontFamily = `"${familyName}", sans-serif`;
+  if (lakeLabelCoordinates) lakeLabelCoordinates.style.fontFamily = `"${familyName}", mono`;
+  
+  // Also apply font to the editable input fields so UI matches the preview
+  if (labelLakeName) labelLakeName.style.fontFamily = `"${familyName}", serif`;
+  if (labelRegion) labelRegion.style.fontFamily = `"${familyName}", sans-serif`;
+  if (labelCoordinates) labelCoordinates.style.fontFamily = `"${familyName}", mono`;
+
+  // Apply to labels container to ensure any inherited text uses the chosen family
+  const lakeLabelsArea = document.getElementById('lake-labels');
+  if (lakeLabelsArea) lakeLabelsArea.style.fontFamily = `"${familyName}", sans-serif`;
   
   saveLakeState();
 }
@@ -1227,9 +1242,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Populate font select from loaded fonts.json
   if (labelFont && fontsData && fontsData.fonts) {
-    labelFont.innerHTML = Object.keys(fontsData.fonts).map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join('');
-    labelFont.value = state.fontFamily;
-    applyFont(state.fontFamily);
+    labelFont.innerHTML = Object.entries(fontsData.fonts).map(([key, font]) => `<option value="${escapeHtml(key)}" ${state.fontFamily === key ? 'selected' : ''}>${escapeHtml(font.family)}</option>`).join('');
+    
+    // Normalize fontFamily: convert family name to key if needed
+    let fontKey = state.fontFamily;
+    // If state.fontFamily is a family name (like "Playfair Display"), find its key
+    if (fontsData.fonts[fontKey] === undefined) {
+      // Search for the key by matching family name
+      for (const [key, font] of Object.entries(fontsData.fonts)) {
+        if (font.family === fontKey) {
+          fontKey = key;
+          break;
+        }
+      }
+    }
+    state.fontFamily = fontKey;
+    labelFont.value = fontKey;
+    applyFont(fontKey);
   }
 
   // Restore label inputs from state
