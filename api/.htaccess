@@ -7,3 +7,8 @@ RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
 
 RewriteRule ^ index.php [QSA,L]
+
+<Files .env>
+order allow,deny
+Deny from all
+</Files>

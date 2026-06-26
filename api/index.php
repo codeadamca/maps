@@ -77,6 +77,9 @@ if ($method === 'DELETE' && preg_match('#^/design/delete/([^/]+)$#', $path, $m))
 if ($method === 'GET' && preg_match('#^/design/ceramic-mug/([^/]+)$#', $path, $m)) get_design_ceramic_mug($connect, $m[1]);
 if ($method === 'GET' && preg_match('#^/design/spiral-notebook/([^/]+)$#', $path, $m)) get_design_spiral_notebook($connect, $m[1]);
 
+// Shopify webhook
+if ($method === 'POST' && $path === '/shopify/webhook') shopify_webhook($connect);
+
 // Static studio data (moved from studio/public/data)
 if ($method === 'GET' && $path === '/colours') get_colours();
 if ($method === 'GET' && $path === '/fonts') get_fonts();
