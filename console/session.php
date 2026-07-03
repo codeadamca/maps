@@ -189,7 +189,14 @@ if (!$not_found && $session['shopify_payload']) {
                                                     $design_id = $item['properties']['design_id'];
                                                 }
 
-
+                                                elseif (isset($item['properties']) && is_array($item['properties'])) {
+                                                    foreach ($item['properties'] as $prop) {
+                                                        if (is_array($prop) && isset($prop['name']) && $prop['name'] === 'design_id' && isset($prop['value'])) {
+                                                            $design_id = $prop['value'];
+                                                            break;
+                                                        }
+                                                    }
+                                                }
 
                                                 ?>
 
@@ -222,7 +229,7 @@ if (!$not_found && $session['shopify_payload']) {
                                 <div class="w3-row">
                                     <?php foreach ($design_ids as $design_id): ?>
                                         <div class="w3-col m3 w3-margin-bottom w3-center">
-                                            <img src="https://api.lakelines.co/design/thumb/<?php echo urlencode($design_id); ?>?colour=ffffff&width=200&height=200" 
+                                            <img src="https://api.lakelines.co/design/thumb/<?php echo urlencode($design_id); ?>?&width=200&height=200" 
                                                  alt="<?php echo htmlspecialchars($design_id); ?>"
                                                  style="max-width: 100%; border: 1px solid #ddd; padding: 4px;">
                                             <p class="w3-small w3-text-grey"><?php echo htmlspecialchars($design_id); ?></p>
