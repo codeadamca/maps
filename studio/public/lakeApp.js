@@ -45,6 +45,27 @@ debugBoundingBox.style.cssText = `
 `;
 document.body.appendChild(debugBoundingBox);
 
+// Update export/template links to include current design ID from URL
+function updateExportLinks() {
+  try {
+    if (typeof designId !== 'string' || !designId) return;
+
+    const btnCeramic = document.getElementById('btn-ceramic');
+    const btnNotebook = document.getElementById('btn-notebook');
+    const btnLakeSvg = document.getElementById('btn-lake-svg');
+    const btnLakePng = document.getElementById('btn-lake-png');
+    const btnShop = document.getElementById('btn-shop');
+
+    if (btnCeramic) btnCeramic.href = `https://api.lakelines.co/design/ceramic-mug/${designId}`;
+    if (btnNotebook) btnNotebook.href = `https://api.lakelines.co/design/spiral-notebook/${designId}`;
+    if (btnLakeSvg) btnLakeSvg.href = `https://api.lakelines.co/design/lake/svg/${designId}`;
+    if (btnLakePng) btnLakePng.href = `https://api.lakelines.co/design/lake/png/${designId}?width=800&height=800`;
+    if (btnShop) btnShop.href = `https://shop.lakelines.co/?design_id=${designId}`;
+  } catch (err) {
+    console.warn('Failed to update export links:', err);
+  }
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // State Management
 // ────────────────────────────────────────────────────────────────────────────
@@ -1223,6 +1244,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   await initApp();
   await initOwner();
   await initDesign();
+
+  // Populate export/template links now that `designId` is available
+  updateExportLinks();
 
   // Initialize confirmation overlay
   initConfirmationOverlay();

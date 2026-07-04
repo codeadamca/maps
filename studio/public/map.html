@@ -124,8 +124,17 @@
       </nav>
 
       <div class="export-actions">
-        <button type="button" id="export-png" class="btn-primary">Download PNG</button>
-        <button type="button" id="export-svg" class="btn-secondary">Download SVG</button>
+        <!-- Hidden original buttons kept for JS compatibility -->
+        <button type="button" id="export-png" class="btn-primary" style="display:none">Download PNG</button>
+        <button type="button" id="export-svg" class="btn-secondary" style="display:none">Download SVG</button>
+
+        <!-- New direct download/template links -->
+        <div class="export-links">
+          <a class="btn-primary" href="https://api.lakelines.co/design/ceramic-mug/LL-ED6B4703" target="_blank" rel="noopener">Ceramic Mug Template</a>
+          <a class="btn-primary" href="https://api.lakelines.co/design/spiral-notebook/LL-ED6B4703" target="_blank" rel="noopener">Spiral Notebook Template</a>
+          <a class="btn-secondary" href="https://api.lakelines.co/design/lake/svg/LL-ED6B4703" target="_blank" rel="noopener">Lake SVG</a>
+          <a class="btn-secondary" href="https://api.lakelines.co/design/lake/svg/LL-ED6B4703" target="_blank" rel="noopener">Lake PNG</a>
+        </div>
       </div>
     </aside>
 

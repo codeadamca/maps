@@ -80,8 +80,18 @@
       </nav>
 
       <div class="export-actions">
-        <button type="button" id="export-png" class="btn-primary">Download PNG</button>
-        <button type="button" id="export-svg" class="btn-secondary">Download SVG</button>
+        <!-- Hidden original buttons kept for JS compatibility -->
+        <button type="button" id="export-png" class="btn-primary" style="display:none">Download PNG</button>
+        <button type="button" id="export-svg" class="btn-secondary" style="display:none">Download SVG</button>
+
+        <!-- New direct download/template links -->
+        <div class="export-links">
+          <a id="btn-ceramic" class="btn-primary" href="#" target="_blank" rel="noopener">Ceramic Mug Template</a>
+          <a id="btn-notebook" class="btn-primary" href="#" target="_blank" rel="noopener">Spiral Notebook Template</a>
+          <a id="btn-lake-svg" class="btn-secondary" href="#" target="_blank" rel="noopener">Lake SVG</a>
+          <a id="btn-lake-png" class="btn-secondary" href="#" target="_blank" rel="noopener">Lake PNG</a>
+          <a id="btn-shop" class="btn-secondary" href="#" target="_blank" rel="noopener">Shop this Lake</a>
+        </div>
       </div>
     </aside>
 

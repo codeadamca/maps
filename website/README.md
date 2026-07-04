@@ -5,8 +5,8 @@ A premium, modern marketing website for Lakelines Co. built with vanilla HTML, C
 ## Overview
 
 This is a marketing funnel website designed to guide users to the studio applications:
-- **Lakes Studio**: https://studio.lakelines.co/lakes
-- **Maps Studio**: https://studio.lakelines.co/maps
+- **Lakes Studio**: https://studio.lakelines.co/lake
+- **Maps Studio**: /map
 
 The site promotes two product lines:
 1. **Custom Maps** - Detailed geographic framed wall art

@@ -527,8 +527,17 @@ select:focus {
   gap: 8px;
 }
 
+.export-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .btn-primary,
 .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   border: none;
   border-radius: 10px;
@@ -539,6 +548,7 @@ select:focus {
   color: #fff;
   cursor: pointer;
   transition: filter 160ms ease;
+  text-decoration: none;
 }
 
 .btn-primary:hover,
