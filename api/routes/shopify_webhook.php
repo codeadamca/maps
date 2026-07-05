@@ -20,6 +20,8 @@
  */
 function shopify_webhook($connect) {
 
+    file_put_contents('webhook_test.log', "WEBHOOK HIT\n", FILE_APPEND);
+
     // Read headers and payload
     $topic = $_SERVER['HTTP_X_SHOPIFY_TOPIC'] ?? null;
     $webhook_id = $_SERVER['HTTP_X_SHOPIFY_WEBHOOK_ID'] ?? null;

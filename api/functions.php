@@ -33,6 +33,11 @@ function respond($success, $payload = []) {
         $res["records"] = $payload["records"] ?? count($payload["designs"]);
     }
 
+    if (isset($payload["products"])) {
+        $res["products"] = $payload["products"];
+        $res["records"] = $payload["records"] ?? count($payload["products"]);
+    }
+
     header('Content-Type: application/json');
 
     echo json_encode($res);
@@ -141,6 +146,23 @@ function get_colours_data() {
     $decoded = json_decode($data, true);
     return $decoded !== null ? $decoded : null;
 }
+
+/**
+ * Get products from the json file and convert to an array
+ * 
+ * @return array|null Array of products or null if file not found or JSON parse fails.
+ */
+function get_products_data() {
+    $path = __DIR__ . '/assets/json/products.json';
+    if (!file_exists($path)) {
+        return null;
+    }
+    $data = file_get_contents($path);
+    $decoded = json_decode($data, true);
+    return $decoded !== null ? $decoded : null;
+}
+
+
 
 /**
  * Get fonts from the json file and convert to an array
@@ -452,3 +474,6 @@ function find_session_by_cart_token($connect, $cart_token) {
     $res = mysqli_query($connect, "SELECT * FROM sessions WHERE cart_token='$cart_token' LIMIT 1");
     return mysqli_fetch_assoc($res);
 }
+
+
+funciton get_

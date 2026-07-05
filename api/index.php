@@ -76,9 +76,11 @@ if ($method === 'DELETE' && preg_match('#^/design/delete/([^/]+)$#', $path, $m))
 
 // Templates
 if ($method === 'GET' && preg_match('#^/template/([^/]+)/([^/]+)$#', $path, $m)) get_template($connect, $m[1], $m[2]);
+if ($method === 'GET' && preg_match('#^/render/([^/]+)/([^/]+)$#', $path, $m)) get_render($connect, $m[1], $m[2]);
 
 // Shopify webhook
-if ($method === 'POST' && $path === '#^/shopify/webhook') shopify_webhook($connect);
+if ($method === 'POST' && $path === '/shopify/webhook') shopify_webhook($connect);
+if ($method === 'GET' && $path === '/shopify/map') shopify_map($connect);
 
 // Static studio data (moved from studio/public/data)
 if ($method === 'GET' && $path === '/colours') get_colours();
@@ -86,6 +88,7 @@ if ($method === 'GET' && $path === '/fonts') get_fonts();
 if ($method === 'GET' && $path === '/icons') get_icons();
 if ($method === 'GET' && $path === '/layers') get_layers();
 if ($method === 'GET' && $path === '/layouts') get_layouts();
+if ($method === 'GET' && $path === '/products') get_products();
 if ($method === 'GET' && $path === '/templates') get_templates();
 if ($method === 'GET' && $path === '/themes') get_themes();
 

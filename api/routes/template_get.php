@@ -12,7 +12,7 @@ function get_template($connect, $design_id, $variant_id) {
 
     if(!isset($templates['templates'][$variant_id])) {
         http_response_code(404);
-        respond(false, ["error" => "Template variantnot found"]);
+        respond(false, ["error" => "Template variant not found"]);
     }
 
     $template = $templates['templates'][$variant_id];
