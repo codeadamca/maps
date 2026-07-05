@@ -1,0 +1,1 @@
+[05-Jul-2026 17:15:58 UTC] PHP Fatal error:  Cannot redeclare fade_color() (previously declared in /home/zwillefn/api.lakelines.co/render-helpers.php:156) in /home/zwillefn/api.lakelines.co/render-helpers.php on line 190

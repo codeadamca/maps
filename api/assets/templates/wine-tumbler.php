@@ -134,7 +134,7 @@ try {
         $image, 
         2120 - 250, 
         500, 
-        $colour, 
+        fade_color($colour, 50), 
         500, 
         6);
 

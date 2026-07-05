@@ -141,6 +141,41 @@ function format_coord($value, $decimals = 4) {
     return number_format((float)$value, $dec, '.', '');
 }
 
+/**
+ * Fade a hex colour toward white by a percentage.
+ *  - $pct = 100 returns the original colour
+ *  - $pct = 0 returns white (#ffffff)
+ *  - accepts 3- or 6-digit hex with or without leading '#'
+ *
+ * @param string $hexColour
+ * @param int|float $pct 0-100
+ * @return string|null  Hex colour string like '#rrggbb' or null on invalid input
+ */
+function fade_color($hexColour, $pct = 100) {
+    if (!is_string($hexColour)) return null;
+
+    $hex = ltrim($hexColour, '#');
+    if (strlen($hex) === 3) {
+        $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+    }
+
+    if (!preg_match('/^[0-9a-fA-F]{6}$/', $hex)) return null;
+
+    $pct = max(0, min(100, (float)$pct));
+    $ratio = $pct / 100.0;
+
+    $r = hexdec(substr($hex, 0, 2));
+    $g = hexdec(substr($hex, 2, 2));
+    $b = hexdec(substr($hex, 4, 2));
+
+    // Blend toward white (255) by (1 - ratio)
+    $nr = (int) round($r * $ratio + 255 * (1 - $ratio));
+    $ng = (int) round($g * $ratio + 255 * (1 - $ratio));
+    $nb = (int) round($b * $ratio + 255 * (1 - $ratio));
+
+    return sprintf('#%02x%02x%02x', $nr, $ng, $nb);
+}
+
 function add_image($canvas, $x, $y, $imagePath, $width = null, $height = null, $opacity = 100) {
 
     if (!file_exists($imagePath)) {
