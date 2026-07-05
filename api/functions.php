@@ -218,6 +218,21 @@ function get_layouts_data() {
 }
 
 /**
+ * Get templates from the json file and convert to an array
+ * 
+ * @return array|null Array of templates or null if file not found or JSON parse fails.
+ */
+function get_templates_data() {
+    $path = __DIR__ . '/assets/json/templates.json';
+    if (!file_exists($path)) {
+        return null;
+    }
+    $data = file_get_contents($path);
+    $decoded = json_decode($data, true);
+    return $decoded !== null ? $decoded : null;
+}
+
+/**
  * Find a session by shopify_order_id or cart_token.
  *
  * @param mysqli $connect MySQLi connection resource.

@@ -74,11 +74,11 @@ if ($method === 'GET' && preg_match('#^/design/([^/]+)$#', $path, $m)) get_desig
 if ($method === 'GET' && preg_match('#^/designs/owner/([^/]+)$#', $path, $m)) get_designs_owner($connect, $m[1]);
 if ($method === 'DELETE' && preg_match('#^/design/delete/([^/]+)$#', $path, $m)) delete_design($connect, $m[1]);
 
-if ($method === 'GET' && preg_match('#^/design/ceramic-mug/([^/]+)$#', $path, $m)) get_design_ceramic_mug($connect, $m[1]);
-if ($method === 'GET' && preg_match('#^/design/spiral-notebook/([^/]+)$#', $path, $m)) get_design_spiral_notebook($connect, $m[1]);
+// Templates
+if ($method === 'GET' && preg_match('#^/template/([^/]+)/([^/]+)$#', $path, $m)) get_template($connect, $m[1], $m[2]);
 
 // Shopify webhook
-if ($method === 'POST' && $path === '/shopify/webhook') shopify_webhook($connect);
+if ($method === 'POST' && $path === '#^/shopify/webhook') shopify_webhook($connect);
 
 // Static studio data (moved from studio/public/data)
 if ($method === 'GET' && $path === '/colours') get_colours();
@@ -86,6 +86,7 @@ if ($method === 'GET' && $path === '/fonts') get_fonts();
 if ($method === 'GET' && $path === '/icons') get_icons();
 if ($method === 'GET' && $path === '/layers') get_layers();
 if ($method === 'GET' && $path === '/layouts') get_layouts();
+if ($method === 'GET' && $path === '/templates') get_templates();
 if ($method === 'GET' && $path === '/themes') get_themes();
 
 respond(false, ["error" => "Route not found"]);

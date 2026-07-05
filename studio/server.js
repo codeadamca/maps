@@ -89,13 +89,21 @@ function isLakeLikeResult(item, allowedCodes, lakeTypes) {
 
 function formatLakeResult(item) {
   const name = String(item.name || item.display_name || '').split(',')[0].trim();
-  const region = [
-    item.address?.state,
-    item.address?.province,
-    item.address?.county,
-    item.address?.municipality,
-    item.address?.country
-  ].filter(Boolean).filter((value, index, arr) => arr.indexOf(value) === index).join(', ');
+  // Prefer a consistent ordering: City, Province/State, Country
+  const city = item.address?.city
+    || item.address?.town
+    || item.address?.village
+    || item.address?.municipality
+    || item.address?.county
+    || '';
+
+  const provinceState = item.address?.state || item.address?.province || '';
+
+  const country = item.address?.country || '';
+
+  const regionParts = [city, provinceState, country].filter(Boolean);
+  // Remove duplicates while preserving order
+  const region = regionParts.filter((value, index, arr) => arr.indexOf(value) === index).join(', ');
 
   return {
     label: item.display_name,

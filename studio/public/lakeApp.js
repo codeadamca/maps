@@ -45,6 +45,67 @@ debugBoundingBox.style.cssText = `
 `;
 document.body.appendChild(debugBoundingBox);
 
+// Normalize region strings to: City, Province/State, Country
+function normalizeRegion(region) {
+  if (!region || typeof region !== 'string') return '';
+
+  const countryCandidates = new Set(['canada', 'united states', 'united states of america', 'usa', 'us']);
+
+  const provincesStates = new Set([
+    // Canadian provinces + territories
+    'ontario','quebec','nova scotia','new brunswick','manitoba','british columbia','prince edward island','saskatchewan','alberta','newfoundland and labrador','northwest territories','yukon','nunavut',
+    // US states (lowercased short list for matching)
+    'alabama','alaska','arizona','arkansas','california','colorado','connecticut','delaware','florida','georgia','hawaii','idaho','illinois','indiana','iowa','kansas','kentucky','louisiana','maine','maryland','massachusetts','michigan','minnesota','mississippi','missouri','montana','nebraska','nevada','new hampshire','new jersey','new mexico','new york','north carolina','north dakota','ohio','oklahoma','oregon','pennsylvania','rhode island','south carolina','south dakota','tennessee','texas','utah','vermont','virginia','washington','west virginia','wisconsin','wyoming'
+  ]);
+
+  const parts = region.split(',').map(s => s.trim()).filter(Boolean);
+  // dedupe
+  const unique = parts.filter((v, i, a) => a.indexOf(v) === i);
+
+  let country = '';
+  let province = '';
+  let city = '';
+
+  // find country (last matching)
+  for (let i = unique.length - 1; i >= 0; i--) {
+    const p = unique[i].toLowerCase();
+    if (countryCandidates.has(p)) {
+      country = unique.splice(i, 1)[0];
+      break;
+    }
+  }
+
+  // find province/state
+  for (let i = unique.length - 1; i >= 0; i--) {
+    const p = unique[i].toLowerCase();
+    // handle cases like 'Ontario' or 'Province of Ontario'
+    const simple = p.replace(/^province of |^state of /, '').trim();
+    if (provincesStates.has(simple)) {
+      province = unique.splice(i, 1)[0];
+      break;
+    }
+  }
+
+  // remaining parts: prefer the most specific (first non-empty)
+  if (unique.length > 0) {
+    // try to pick a part that doesn't look like 'district' or 'county municipality' unless nothing else
+    const candidate = unique.find(u => !/district|municipality|county|region/i.test(u)) || unique[0];
+    city = candidate;
+  }
+
+  const outParts = [];
+  if (city) outParts.push(city);
+  if (province) outParts.push(province);
+  if (country) outParts.push(country);
+
+  // fallback: if nothing matched province but there are still parts, join remaining
+  if (outParts.length === 0 && unique.length > 0) {
+    return unique.join(', ');
+  }
+
+  return outParts.join(', ');
+}
+
 // Update export/template links to include current design ID from URL
 function updateExportLinks() {
   try {
@@ -98,6 +159,11 @@ async function loadLakeState() {
 
     // Save state to global variable
     state = Object.assign({}, newState);
+
+    // Normalize region formatting for older saved states
+    if (state.region) {
+      state.region = normalizeRegion(state.region);
+    }
 
     console.log('[Load Lake State] Lake state loaded:', designId);
 
@@ -901,7 +967,7 @@ async function selectLakeFromSearch(lake) {
 
   state.lakeId = `${lake.osmType}:${lake.osmId}`;
   state.lakeName = lake.name;
-  state.region = lake.region;
+  state.region = normalizeRegion(lake.region || '');
   state.lat = lake.lat;
   state.lon = lake.lon;
   state.osmType = lake.osmType;

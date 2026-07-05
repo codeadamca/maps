@@ -1,3 +1,4 @@
+DirectorySlash Off
 RewriteEngine On
 
 RewriteRule ^docs$ docs.html [L]

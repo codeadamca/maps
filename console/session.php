@@ -206,7 +206,11 @@ if (!$not_found && $session['shopify_payload']) {
                                                              alt="<?php echo htmlspecialchars($design_id); ?>"
                                                              style="max-width: 100px; border: 1px solid #ddd;">
                                                     </td>
-                                                    <td><?php echo htmlspecialchars($item['title'] ?? ''); ?></td>
+                                                    <td>
+                                                        <?php echo htmlspecialchars($item['title'] ?? ''); ?>
+                                                        <br>
+                                                        <?php echo htmlspecialchars($item['variant_id'] ?? ''); ?>
+                                                    </td>
                                                     <td><?php echo htmlspecialchars($item['quantity'] ?? '1'); ?></td>
                                                     <td><?php echo htmlspecialchars($item['price'] ?? '-'); ?></td>
                                                     <td><?php echo htmlspecialchars($design_id); ?></td>
