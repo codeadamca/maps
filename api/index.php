@@ -69,7 +69,6 @@ if ($method === 'POST' && $path === '/design/reset') reset_design($connect);
 if ($method === 'POST' && $path === '/design/duplicate') duplicate_design($connect);
 if ($method === 'GET' && preg_match('#^/design/lake/png/([^/]+)$#', $path, $m)) get_design_lake_png($connect, $m[1]);
 if ($method === 'GET' && preg_match('#^/design/lake/svg/([^/]+)$#', $path, $m)) get_design_lake_svg($connect, $m[1]);
-if ($method === 'GET' && preg_match('#^/design/thumb/([^/]+)$#', $path, $m)) get_design_thumb($connect, $m[1]);
 if ($method === 'GET' && preg_match('#^/design/([^/]+)$#', $path, $m)) get_design($connect, $m[1]);
 if ($method === 'GET' && preg_match('#^/designs/owner/([^/]+)$#', $path, $m)) get_designs_owner($connect, $m[1]);
 if ($method === 'DELETE' && preg_match('#^/design/delete/([^/]+)$#', $path, $m)) delete_design($connect, $m[1]);

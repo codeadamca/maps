@@ -114,7 +114,11 @@ function collect_all_points($coords) {
 
 /**
  * Normalize geo coordinates to canvas space (0-100 range with padding)
- * Matches lakeApp.js: ((lon - minLon) / lonRange) * (100 - 2 * padding) + padding
+ * CRITICAL: Applies cosine correction for latitude to preserve geographic aspect ratio.
+ * At higher latitudes, degrees of longitude represent shorter distances than degrees of latitude.
+ * This function corrects for meridian convergence to ensure the lake shape matches reality.
+ * 
+ * Matches lakeApp.js: Uses cosine(centerLat) to correct longitude range, then uniform scale.
  * 
  * @param float $lon Longitude
  * @param float $lat Latitude
@@ -123,8 +127,19 @@ function collect_all_points($coords) {
  * @return array ['x', 'y'] normalized coordinates
  */
 function coord_to_normalized($lon, $lat, $bounds, $padding = 5) {
-    $x = (($lon - $bounds['minLon']) / $bounds['lonRange']) * (100 - 2 * $padding) + $padding;
-    $y = (($bounds['maxLat'] - $lat) / $bounds['latRange']) * (100 - 2 * $padding) + $padding;
+    // GEOGRAPHIC CORRECTION: Account for latitude convergence (meridian convergence)
+    // At higher latitudes, degrees of longitude represent shorter physical distances
+    $centerLat = ($bounds['minLat'] + $bounds['maxLat']) / 2;
+    $cosLat = cos(deg2rad($centerLat));
+    $correctedLonRange = $bounds['lonRange'] * $cosLat;
+    
+    // Use the maximum of corrected longitude range and latitude range for uniform scaling
+    // This ensures the lake is not stretched or squashed in either direction
+    $maxGeoRange = max($correctedLonRange, $bounds['latRange']);
+    
+    // Apply correction to both axes using the same scale factor
+    $x = (($lon - $bounds['minLon']) * $cosLat) / $maxGeoRange * (100 - 2 * $padding) + $padding;
+    $y = (($bounds['maxLat'] - $lat) / $maxGeoRange) * (100 - 2 * $padding) + $padding;
     return ['x' => $x, 'y' => $y];
 }
 
@@ -256,15 +271,19 @@ function create_transform_functions($allPoints, $bounds, $zoom, $rotation, $panX
         }
     }
 
-    // Rotated bbox dimensions
+    // Rotated bbox dimensions (in geo coordinates, before aspect ratio correction)
     $rotDx = ($rotMaxX - $rotMinX) ?: 1e-6;
     $rotDy = ($rotMaxY - $rotMinY) ?: 1e-6;
 
+    // GEOGRAPHIC CORRECTION: Apply cosine correction to longitude for latitude convergence
+    // This ensures we use uniform scaling to preserve the true geographic aspect ratio
+    $cosLat = cos(deg2rad($centerLat));
+    $correctedRotDx = $rotDx * $cosLat;
+    $maxRotGeoRange = max($correctedRotDx, $rotDy);
+    
     // Base scale: fit rotated geometry into canvas with padding, accounting for user zoom
-    $baseScale = min(
-        ($canvasWidth - 2 * $padding) / $rotDx,
-        ($canvasHeight - 2 * $padding) / $rotDy
-    ) / max($zoom, 1e-6);
+    // Use the maximum geographic range for BOTH axes to ensure uniform scaling
+    $baseScale = (min($canvasWidth - 2 * $padding, $canvasHeight - 2 * $padding) / $maxRotGeoRange) / max($zoom, 1e-6);
 
     // Initial transform to get pixel bounds
     $pixelMinX = null;
@@ -273,8 +292,8 @@ function create_transform_functions($allPoints, $bounds, $zoom, $rotation, $panX
     $pixelMaxY = null;
 
     foreach ($allPoints as $p) {
-        // Map to canvas
-        $x = ($p[0] - $centerLon) * $baseScale + $centerX;
+        // Map to canvas - apply cosine correction to longitude
+        $x = (($p[0] - $centerLon) * $cosLat) * $baseScale + $centerX;
         $y = ($centerLat - $p[1]) * $baseScale + $centerY;
 
         // Rotate around center
@@ -341,10 +360,10 @@ function create_transform_functions($allPoints, $bounds, $zoom, $rotation, $panX
     $maxIterations = 3;
     $iter = 0;
     while ($iter < $maxIterations) {
-        // compute final pixel bounds with current baseScale, offset and usedPan
+        // compute final pixel bounds with current baseScale, offset and usedPan - apply cosine correction
         $fMinX = null; $fMaxX = null; $fMinY = null; $fMaxY = null;
         foreach ($allPoints as $p) {
-            $x = ($p[0] - $centerLon) * $baseScale + $centerX;
+            $x = (($p[0] - $centerLon) * $cosLat) * $baseScale + $centerX;
             $y = ($centerLat - $p[1]) * $baseScale + $centerY;
             $dx = $x - $centerX; $dy = $y - $centerY;
             $rotX = $cos * $dx - $sin * $dy;
@@ -372,10 +391,10 @@ function create_transform_functions($allPoints, $bounds, $zoom, $rotation, $panX
         // Apply scale reduction and recompute offsets/pan clamps
         $baseScale *= $scaleFactor;
 
-        // Recompute pixel-based bounds (un-rotated) to recalc margins and offsets
+        // Recompute pixel-based bounds (un-rotated) to recalc margins and offsets - apply cosine correction
         $pixelMinX = $pixelMaxX = $pixelMinY = $pixelMaxY = null;
         foreach ($allPoints as $p) {
-            $x = ($p[0] - $centerLon) * $baseScale + $centerX;
+            $x = (($p[0] - $centerLon) * $cosLat) * $baseScale + $centerX;
             $y = ($centerLat - $p[1]) * $baseScale + $centerY;
             $dx = $x - $centerX; $dy = $y - $centerY;
             $rotX = $cos * $dx - $sin * $dy;
@@ -410,12 +429,12 @@ function create_transform_functions($allPoints, $bounds, $zoom, $rotation, $panX
     }
 
         // Recompute final bounds and apply a last-centering adjustment so
-        // the final rendered bbox is centered in the canvas (even after pan clamp)
+        // the final rendered bbox is centered in the canvas (even after pan clamp) - apply cosine correction
         $fMinX = $fMaxX = $fMinY = $fMaxY = null;
         $angle = deg2rad($rotation);
         $cos = cos($angle); $sin = sin($angle);
         foreach ($allPoints as $p) {
-            $x = ($p[0] - $centerLon) * $baseScale + $centerX;
+            $x = (($p[0] - $centerLon) * $cosLat) * $baseScale + $centerX;
             $y = ($centerLat - $p[1]) * $baseScale + $centerY;
             $dx = $x - $centerX; $dy = $y - $centerY;
             $rotX = $cos * $dx - $sin * $dy;
@@ -431,10 +450,10 @@ function create_transform_functions($allPoints, $bounds, $zoom, $rotation, $panX
             $desiredAdjX = $centerX - (($fMinX + $fMaxX) / 2);
             $desiredAdjY = $centerY - (($fMinY + $fMaxY) / 2);
 
-            // Recompute un-panned/un-offset pixel bounds for offset clamping
+        // Recompute un-rotated pixel bounds for offset clamping - apply cosine correction
             $pixelMinX = $pixelMaxX = $pixelMinY = $pixelMaxY = null;
             foreach ($allPoints as $p) {
-                $x = ($p[0] - $centerLon) * $baseScale + $centerX;
+                $x = (($p[0] - $centerLon) * $cosLat) * $baseScale + $centerX;
                 $y = ($centerLat - $p[1]) * $baseScale + $centerY;
                 $dx = $x - $centerX; $dy = $y - $centerY;
                 $rotX = $cos * $dx - $sin * $dy;
@@ -468,9 +487,10 @@ function create_transform_functions($allPoints, $bounds, $zoom, $rotation, $panX
         }
 
     // Return closure that transforms geo coords to canvas pixels with even centering
-    $toCanvas = function($lon, $lat) use ($centerLon, $centerLat, $baseScale, $centerX, $centerY, $rotation, $offsetX, $offsetY, $usedPanX, $usedPanY) {
+    $toCanvas = function($lon, $lat) use ($centerLon, $centerLat, $baseScale, $centerX, $centerY, $rotation, $offsetX, $offsetY, $usedPanX, $usedPanY, $cosLat) {
         // Step 1: Map geo coords to canvas space
-        $x = ($lon - $centerLon) * $baseScale + $centerX;
+        // CRITICAL: Apply cosine correction to longitude to account for latitude convergence
+        $x = (($lon - $centerLon) * $cosLat) * $baseScale + $centerX;
         $y = ($centerLat - $lat) * $baseScale + $centerY;
 
         // Step 2: Rotate around canvas center
@@ -554,9 +574,12 @@ function render_lake_thumbnail($geojson, $backgroundColor, $lakeColor, $zoom = 1
     imagealphablending($image, false);
     imagesavealpha($image, true);
 
-    // fully transparent background
+    // Fully transparent background
     $transparent = imagecolorallocatealpha($image, 255, 255, 255, 127);
     imagefill($image, 0, 0, $transparent);
+
+    // Fully transparent color for island holes (alpha = 127 for full transparency in GD)
+    $transparentFill = imagecolorallocatealpha($image, 0, 0, 0, 127);
 
     if (!$geojson || !isset($geojson['coordinates'])) {
         error_log("[RENDER] No geojson or no coordinates");
@@ -568,25 +591,48 @@ function render_lake_thumbnail($geojson, $backgroundColor, $lakeColor, $zoom = 1
 
     error_log("[RENDER] Type: $type, zoom: $zoom, rotation: $rotation, pan: ($panX, $panY)");
 
-    // Extract all rings
-    $rings = [];
+    // Extract all rings with metadata to identify which are outer boundaries vs holes
+    // In GeoJSON: ring 0 of each polygon = outer boundary, rings 1+ = holes/islands
+    // For GD rendering with alpha: fill outer with lake color, holes with transparent color
+    $allRings = [];  // Array of ['ring' => coordinates, 'isHole' => bool, 'polyIdx' => int]
+    
     if ($type === 'Polygon') {
-        $rings = $coordinates;
+        // For a single Polygon, process all rings
+        foreach ($coordinates as $ringIdx => $ring) {
+            if (is_array($ring) && count($ring) > 0) {
+                $allRings[] = [
+                    'ring' => $ring,
+                    'isHole' => ($ringIdx > 0),  // Ring 0 is outer, 1+ are holes
+                    'polyIdx' => 0,
+                    'ringIdx' => $ringIdx
+                ];
+            }
+        }
     } elseif ($type === 'MultiPolygon') {
-        foreach ($coordinates as $polygon) {
-            $rings = array_merge($rings, $polygon);
+        // For MultiPolygon, process each polygon and its rings
+        foreach ($coordinates as $polyIdx => $polygon) {
+            foreach ($polygon as $ringIdx => $ring) {
+                if (is_array($ring) && count($ring) > 0) {
+                    $allRings[] = [
+                        'ring' => $ring,
+                        'isHole' => ($ringIdx > 0),  // Ring 0 is outer, 1+ are holes
+                        'polyIdx' => $polyIdx,
+                        'ringIdx' => $ringIdx
+                    ];
+                }
+            }
         }
     } else {
         error_log("[RENDER] Unsupported type: $type");
         return $image;
     }
 
-    if (empty($rings)) {
+    if (empty($allRings)) {
         error_log("[RENDER] No rings found");
         return $image;
     }
 
-    error_log("[RENDER] Found " . count($rings) . " rings");
+    error_log("[RENDER] Found " . count($allRings) . " rings total (outer boundaries + holes with alpha transparency)");
 
     // Get bounds and all points
     $bounds = fit_geometry($geojson);
@@ -679,15 +725,24 @@ function render_lake_thumbnail($geojson, $backgroundColor, $lakeColor, $zoom = 1
         error_log("[RENDER] Proceeding anyway - GD will handle out-of-bounds points gracefully");
     }
 
-    // Render each ring as a filled polygon
+    // Render all rings: outer with lake color, holes with transparent color to create alpha mask effect
     // Global bbox for all rings (lake)
     $globalMinX = $globalMaxX = $globalMinY = $globalMaxY = null;
 
-    foreach ($rings as $ringIdx => $ring) {
+    foreach ($allRings as $ringData) {
+        $ring = $ringData['ring'];
+        $isHole = $ringData['isHole'];
+        $polyIdx = $ringData['polyIdx'];
+        $ringIdx = $ringData['ringIdx'];
+        $ringType = $isHole ? "hole" : "outer";
+        
         if (count($ring) < 3) {
-            error_log("[RENDER] Ring $ringIdx has < 3 points: " . count($ring));
+            error_log("[RENDER] Polygon $polyIdx Ring $ringIdx ($ringType) has < 3 points: " . count($ring));
             continue; // Need at least 3 points for a polygon
         }
+
+        // Determine fill color: lake color for outer, transparent for holes
+        $fillColor = $isHole ? $transparentFill : $lakeColorInt;
 
         // Convert ring to pixel coordinates
         $pixelRing = [];
@@ -719,22 +774,24 @@ function render_lake_thumbnail($geojson, $backgroundColor, $lakeColor, $zoom = 1
         }
 
         if (count($pixelRing) >= 6) { // At least 3 x,y pairs
-            error_log("[RENDER] Ring $ringIdx: " . count($pixelRing) / 2 . " points");
+            error_log("[RENDER] Polygon $polyIdx Ring $ringIdx ($ringType): " . count($pixelRing) / 2 . " points");
             error_log("[RENDER]   First 3: " . implode(", ", $pointLog));
             error_log("[RENDER]   Bounds: ($minX-$maxX, $minY-$maxY)");
-            $result = imagefilledpolygon($image, $pixelRing, count($pixelRing) / 2, $lakeColorInt);
-            error_log("[RENDER]   imagefilledpolygon returned: " . ($result ? 'true' : 'false'));
-            // Expand global bbox
-            if ($globalMinX === null) {
-                $globalMinX = $minX; $globalMaxX = $maxX; $globalMinY = $minY; $globalMaxY = $maxY;
-            } else {
-                $globalMinX = min($globalMinX, $minX);
-                $globalMaxX = max($globalMaxX, $maxX);
-                $globalMinY = min($globalMinY, $minY);
-                $globalMaxY = max($globalMaxY, $maxY);
+            $result = imagefilledpolygon($image, $pixelRing, count($pixelRing) / 2, $fillColor);
+            error_log("[RENDER]   imagefilledpolygon ($ringType) returned: " . ($result ? 'true' : 'false'));
+            // Expand global bbox only for outer rings
+            if (!$isHole) {
+                if ($globalMinX === null) {
+                    $globalMinX = $minX; $globalMaxX = $maxX; $globalMinY = $minY; $globalMaxY = $maxY;
+                } else {
+                    $globalMinX = min($globalMinX, $minX);
+                    $globalMaxX = max($globalMaxX, $maxX);
+                    $globalMinY = min($globalMinY, $minY);
+                    $globalMaxY = max($globalMaxY, $maxY);
+                }
             }
         } else {
-            error_log("[RENDER] Ring $ringIdx: insufficient pixel data: " . count($pixelRing));
+            error_log("[RENDER] Polygon $polyIdx Ring $ringIdx ($ringType): insufficient pixel data: " . count($pixelRing));
         }
     }
 

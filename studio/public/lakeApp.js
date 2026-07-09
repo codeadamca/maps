@@ -424,11 +424,15 @@ function calculateAutoFitLayout(svgElement, rotationDegrees) {
   const vbW = parseFloat(parts[2]) || 100;
   const vbH = parseFloat(parts[3]) || 100;
 
-  // Get container size
+  // Get container size and accurately account for element padding
   const rect = lakeSilhouetteArea.getBoundingClientRect();
-  // Account for the padding on .lake-silhouette-area (20px on all sides)
-  const containerW = rect.width - 40;
-  const containerH = rect.height - 40;
+  const cs = window.getComputedStyle(lakeSilhouetteArea);
+  const padLeft = parseFloat(cs.paddingLeft) || 0;
+  const padRight = parseFloat(cs.paddingRight) || 0;
+  const padTop = parseFloat(cs.paddingTop) || 0;
+  const padBottom = parseFloat(cs.paddingBottom) || 0;
+  const containerW = Math.max(0, rect.width - padLeft - padRight);
+  const containerH = Math.max(0, rect.height - padTop - padBottom);
 
   if (containerW <= 0 || containerH <= 0) {
     return { scale: 1, translateX: 0, translateY: 0, rotW: 100, rotH: 100, rotCenterX: 50, rotCenterY: 50 };
@@ -444,57 +448,34 @@ function calculateAutoFitLayout(svgElement, rotationDegrees) {
   const viewBoxAspect = vbW / vbH;
   const containerAspect = containerW / containerH;
 
+  // Calculate how the viewBox content actually renders in pixel space
+  // with preserveAspectRatio="xMidYMid meet"
   let renderedW = containerW;
   let renderedH = containerH;
 
   if (viewBoxAspect > containerAspect) {
+    // ViewBox is wider than container: scale to fit width, center vertically
     renderedH = containerW / viewBoxAspect;
   } else {
+    // Container is wider than viewBox: scale to fit height, center horizontally
     renderedW = containerH * viewBoxAspect;
   }
 
-  // Rotate the rendered content box around its center.
-  const corners = [
-    { x: -renderedW / 2, y: -renderedH / 2 },
-    { x: renderedW / 2, y: -renderedH / 2 },
-    { x: renderedW / 2, y: renderedH / 2 },
-    { x: -renderedW / 2, y: renderedH / 2 }
-  ];
-
-  // Rotate corners around center and find bounds in rotated space
-  let rotMinX = Infinity, rotMaxX = -Infinity;
-  let rotMinY = Infinity, rotMaxY = -Infinity;
-
-  corners.forEach((corner) => {
-    const rotX = cos * corner.x - sin * corner.y;
-    const rotY = sin * corner.x + cos * corner.y;
-
-    rotMinX = Math.min(rotMinX, rotX);
-    rotMaxX = Math.max(rotMaxX, rotX);
-    rotMinY = Math.min(rotMinY, rotY);
-    rotMaxY = Math.max(rotMaxY, rotY);
-  });
-
-  const rotW = rotMaxX - rotMinX;
-  const rotH = rotMaxY - rotMinY;
-
-  // Safety check: ensure rotated dimensions are valid
-  if (rotW <= 0 || rotH <= 0) {
-    return { scale: 1, translateX: 0, translateY: 0, rotW: 100, rotH: 100, rotCenterX: 50, rotCenterY: 50 };
-  }
-
-  // Apply adaptive padding within the available space
-  // Reduced by 75% from 5% to 1.25% to minimize outer padding
-  const internalPadding = Math.max(5, Math.min(containerW, containerH) * 0.0125);
-
-  // Scale to fit rotated bounds with internal padding
-  const scaleX = (containerW - 2 * internalPadding) / rotW;
-  const scaleY = (containerH - 2 * internalPadding) / rotH;
+  // CRITICAL: Use actual rendered dimensions for scale calculation
+  // The rendered dimensions are now based on the corrected viewBox from the lake geometry
+  // DO NOT apply rotation to calculate scale - let the container and viewBox aspect ratio determine it
+  // Rotation is applied by CSS transform AFTER scaling
+  // Use a small internal padding (as pixels) to avoid touching edges
+  const internalPadding = Math.max(8, Math.min(containerW, containerH) * 0.02);
+  
+  // Calculate scale to fit rendered lake within container with padding
+  const scaleX = (containerW - 2 * internalPadding) / renderedW;
+  const scaleY = (containerH - 2 * internalPadding) / renderedH;
   const scale = Math.max(0.05, Math.min(1.0, scaleX, scaleY));
 
-  // Calculate center of rotated bounds in rendered-pixel local space.
-  const rotCenterX = (rotMinX + rotMaxX) / 2;
-  const rotCenterY = (rotMinY + rotMaxY) / 2;
+  // Calculate center point for centering
+  const rotCenterX = vbW / 2;
+  const rotCenterY = vbH / 2;
 
   // The SVG content is already centered within the silhouette area by
   // preserveAspectRatio="xMidYMid meet", so re-fit only needs to scale.
@@ -506,12 +487,8 @@ function calculateAutoFitLayout(svgElement, rotationDegrees) {
     scale, 
     translateX, 
     translateY, 
-    rotW, 
-    rotH, 
-    rotMinX,
-    rotMaxX,
-    rotMinY,
-    rotMaxY,
+    rotW: renderedW,
+    rotH: renderedH,
     rotCenterX,
     rotCenterY,
     containerW,
@@ -967,13 +944,18 @@ async function selectLakeFromSearch(lake) {
 
   state.lakeId = `${lake.osmType}:${lake.osmId}`;
   state.lakeName = lake.name;
+  
+  // Set region: use reverse geocoding from server to get "City, Province/State, Country" format
+  // The server's formatLakeResult() extracts city/town/village, province/state, and country
+  // Fallback to normalized format if server doesn't provide formatted region
   state.region = normalizeRegion(lake.region || '');
+  
   state.lat = lake.lat;
   state.lon = lake.lon;
   state.osmType = lake.osmType;
   state.osmId = lake.osmId;
 
-  // Update label inputs
+  // Update label inputs (second label defaults to "City, Province/State, Country" from reverse geocoding)
   labelLakeName.value = state.lakeName;
   labelRegion.value = state.region;
   labelCoordinates.value = formatCoordinates(state.lat, state.lon);
@@ -1145,19 +1127,37 @@ function renderLakeSilhouette(geojson) {
   const { minLon, maxLon, minLat, maxLat, lonRange, latRange } = fitLakeSilhouette(geojson);
 
   // Normalize coordinates to SVG space (0-100) with padding
-  const basePadding = 5;
+  // CRITICAL: Correct longitude for latitude convergence (meridian convergence)
+  // At higher latitudes, degrees of longitude represent shorter physical distances than degrees of latitude
+  // Apply cosine correction based on center latitude to preserve true geographic aspect ratio
+  const centerLat = (minLat + maxLat) / 2;
+  const cosLat = Math.cos(centerLat * Math.PI / 180);
+  const correctedLonRange = lonRange * cosLat;
+  const maxGeoRange = Math.max(correctedLonRange, latRange);
+  
+  // Use fixed small padding in coordinate conversion to ensure full lake is visible
+  const coordPadding = 2;
+  
+  console.log('[Lake Render] Geo ranges - lonRange:', lonRange, 'latRange:', latRange, 'centerLat:', centerLat, 'cosLat:', cosLat, 'correctedLonRange:', correctedLonRange, 'maxGeoRange:', maxGeoRange, 'aspect ratio:', correctedLonRange / latRange);
+  
   function coordToSvg(lon, lat) {
-    const x = ((lon - minLon) / lonRange) * (100 - 2 * basePadding) + basePadding;
-    const y = ((maxLat - lat) / latRange) * (100 - 2 * basePadding) + basePadding;
+    // Apply longitude correction: multiply by cosLat to account for meridian convergence
+    const x = (((lon - minLon) * cosLat) / maxGeoRange) * (100 - 2 * coordPadding) + coordPadding;
+    const y = ((maxLat - lat) / maxGeoRange) * (100 - 2 * coordPadding) + coordPadding;
     return { x, y };
   }
 
-  // Create SVG paths for each ring (NO STROKE)
-  // Track the overall drawn bounds in SVG coordinates so we can zoom to-fit.
+  // Create a single SVG path combining all rings (boundary + islands/holes)
+  // Use fill-rule="evenodd" so the SVG engine automatically treats subsequent rings as holes
+  // This displays islands as transparent cutouts in the lake
   let drawMinX = Infinity, drawMinY = Infinity, drawMaxX = -Infinity, drawMaxY = -Infinity;
 
+  // Combine all rings into a single path data string
+  const allPathCommands = [];
+  
   rings.forEach((ring, ringIdx) => {
     if (ring.length < 2) return;
+    
     const pts = ring.map(([lon, lat]) => coordToSvg(lon, lat));
     pts.forEach(p => {
       drawMinX = Math.min(drawMinX, p.x);
@@ -1166,25 +1166,41 @@ function renderLakeSilhouette(geojson) {
       drawMaxY = Math.max(drawMaxY, p.y);
     });
 
-    const pathData = pts.map((p, ptIdx) => `${ptIdx === 0 ? 'M' : 'L'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ') + ' Z';
-
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', pathData);
-    path.setAttribute('fill', colour.primary);
-    lakeSilhouetteSvg.appendChild(path);
+    // For each ring, generate M (moveto) → L (lineto) commands → Z (closepath)
+    const ringCommands = pts.map((p, ptIdx) => `${ptIdx === 0 ? 'M' : 'L'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ') + ' Z';
+    allPathCommands.push(ringCommands);
   });
+
+  // Create single path element with all rings combined
+  if (allPathCommands.length > 0) {
+    const combinedPathData = allPathCommands.join(' ');
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', combinedPathData);
+    path.setAttribute('fill', colour.primary);
+    path.setAttribute('fill-rule', 'evenodd');
+    lakeSilhouetteSvg.appendChild(path);
+  }
 
   // If we found bounds, compute a tight viewBox with a small padding so the silhouette
   // fills the available SVG area as much as possible while remaining fully visible.
   if (isFinite(drawMinX) && isFinite(drawMinY) && isFinite(drawMaxX) && isFinite(drawMaxY)) {
     const w = drawMaxX - drawMinX || 1;
     const h = drawMaxY - drawMinY || 1;
-    // add a small padding proportional to the larger dimension (2% of max dimension)
-    const pad = Math.max(1, Math.min(5, Math.max(w, h) * 0.02));
-    const vbX = Math.max(0, drawMinX - pad);
-    const vbY = Math.max(0, drawMinY - pad);
-    const vbW = Math.min(100, w + pad * 2);
-    const vbH = Math.min(100, h + pad * 2);
+    
+    // CRITICAL: Apply padding proportionally to preserve aspect ratio
+    // Instead of adding absolute pixel padding, scale both dimensions by the same factor
+    // This ensures the viewBox maintains the original geographic aspect ratio
+    const padPercent = 0.03; // 3% proportional padding on each dimension
+    const vbW = Math.min(100, w * (1 + padPercent));
+    const vbH = Math.min(100, h * (1 + padPercent));
+    
+    // Calculate viewBox origin with proportional inset
+    const insetX = (w * padPercent) / 2;
+    const insetY = (h * padPercent) / 2;
+    const vbX = Math.max(0, drawMinX - insetX);
+    const vbY = Math.max(0, drawMinY - insetY);
+    
+    console.log('[Lake Render] Draw bounds - w:', w, 'h:', h, 'aspect:', w/h, 'viewBox:', `${vbX.toFixed(2)} ${vbY.toFixed(2)} ${vbW.toFixed(2)} ${vbH.toFixed(2)}`, 'vb aspect:', vbW/vbH);
     lakeSilhouetteSvg.setAttribute('viewBox', `${vbX.toFixed(2)} ${vbY.toFixed(2)} ${vbW.toFixed(2)} ${vbH.toFixed(2)}`);
   } else {
     lakeSilhouetteSvg.setAttribute('viewBox', '0 0 100 100');

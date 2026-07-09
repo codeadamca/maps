@@ -121,15 +121,24 @@ function get_design_lake_svg($connect, $id) {
             $rotDx = ($rotMaxX - $rotMinX) ?: 1e-6;
             $rotDy = ($rotMaxY - $rotMinY) ?: 1e-6;
 
+            // GEOGRAPHIC CORRECTION: Apply cosine correction to longitude for latitude convergence
+            // At higher latitudes, degrees of longitude represent shorter distances than degrees of latitude.
+            // Using a uniform scale preserves the true geographic aspect ratio of the lake.
+            $cosLat = cos(deg2rad($centerLat));
+            $correctedRotDx = $rotDx * $cosLat;  // Correct longitude range
+            $maxRotGeoRange = max($correctedRotDx, $rotDy);  // Use max for uniform scaling
+            
             // base scale fits the rotated bbox into the thumbnail taking into account user zoom
-            $baseScale = min(($width - 2 * $padding) / $rotDx, ($height - 2 * $padding) / $rotDy) / max($zoom, 1e-6);
+            // Use the same scale for both axes to preserve geographic proportions
+            $baseScale = (min($width - 2 * $padding, $height - 2 * $padding) / $maxRotGeoRange) / max($zoom, 1e-6);
 
             // compute transform functions using scale and center it in the thumbnail
             $centerX = $width / 2;
             $centerY = $height / 2;
 
-            $transformX = function($lon) use ($centerLon, $baseScale, $centerX) {
-                return ($lon - $centerLon) * $baseScale + $centerX;
+            // Apply cosine correction to longitude in the transform functions
+            $transformX = function($lon) use ($centerLon, $baseScale, $centerX, $cosLat) {
+                return (($lon - $centerLon) * $cosLat) * $baseScale + $centerX;
             };
 
             $transformY = function($lat) use ($centerLat, $baseScale, $centerY) {
@@ -161,14 +170,14 @@ function get_design_lake_svg($connect, $id) {
                 foreach ($geo['coordinates'] as $ring) {
                     $d .= $buildPathFromRing($ring);
                 }
-                $paths .= '<path d="' . $d . '" fill="' . $colour . '" fill-rule="evenodd" stroke="#0b1b2b" stroke-width="1" />';
+                $paths .= '<path d="' . $d . '" fill="' . $colour . '" fill-rule="evenodd" stroke="none" />';
             } elseif ($type === 'MultiPolygon') {
                 foreach ($geo['coordinates'] as $poly) {
                     $d = '';
                     foreach ($poly as $ring) {
                         $d .= $buildPathFromRing($ring);
                     }
-                    $paths .= '<path d="' . $d . '" fill="' . $colour . '" fill-rule="evenodd" stroke="#0b1b2b" stroke-width="1" />';
+                    $paths .= '<path d="' . $d . '" fill="' . $colour . '" fill-rule="evenodd" stroke="none" />';
                 }
             } elseif ($type === 'LineString' || $type === 'MultiLineString') {
                 $lines = $geo['coordinates'];

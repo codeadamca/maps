@@ -50,6 +50,13 @@ function add_center_text(
         $fontPath,
         $text
     );
+
+    return array(
+        'x' => $textX,
+        'y' => $textY,
+        'width' => $textWidth,
+        'height' => $fontSize
+    );
     
 }
 
@@ -97,6 +104,13 @@ function add_text(
         $fontPath,
         $text
     );
+
+    return array(
+        'x' => $x,
+        'y' => $y,
+        'width' => max($bbox[2], $bbox[4]) - min($bbox[0], $bbox[6]),
+        'height' => $fontSize
+    );
     
 }
 
@@ -120,7 +134,12 @@ function add_rectangle($canvas, $x, $y, $colour, $width, $height) {
     // Draw filled rectangle from (x,y) to (x+width, y+height)
     imagefilledrectangle($canvas, $x, $y, $x + $width, $y + $height, $col);
 
-    return true;
+    return array(
+        'x' => $x,
+        'y' => $y,
+        'width' => $width,
+        'height' => $height
+    );
 
 }
 
@@ -286,7 +305,12 @@ function add_image($canvas, $x, $y, $imagePath, $width = null, $height = null, $
     imagedestroy($overlay);
     imagedestroy($image);
 
-    return true;
+    return array(
+        'x' => $x,
+        'y' => $y,
+        'width' => $dstW,
+        'height' => $dstH
+    );
 
 }
 
@@ -318,6 +342,11 @@ function add_remote_image($canvas, $x, $y, $url) {
 
     imagedestroy($overlay);
 
-    return true;
+    return array(
+        'x' => $x,
+        'y' => $y,
+        'width' => imagesx($overlay),
+        'height' => imagesy($overlay)
+    );
     
 }

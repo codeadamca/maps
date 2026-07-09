@@ -60,7 +60,7 @@ async function loadDesigns() {
         const head = document.createElement('div');
         head.className = 'card-head';
 
-        const thumbUrl = `https://api.lakelines.co/design/thumb/${design.design_id}`;
+        const thumbUrl = `https://api.lakelines.co/design/lake/png/${design.design_id}?colour=%23ffffff`;
         // Put thumbnail SVG behind the card content so it sits behind the button and icon
         link.style.position = 'relative';
         link.style.overflow = 'hidden';
@@ -69,7 +69,7 @@ async function loadDesigns() {
         bgImg.src = thumbUrl;
         bgImg.alt = '';
         // Make thumbnauil 20% transparent so text is more readable on top of it
-        bgImg.style.opacity = '0.2';
+        bgImg.style.opacity = '0.3';
         bgImg.setAttribute('aria-hidden', 'true');
         bgImg.style.position = 'absolute';
         bgImg.style.left = '0';

@@ -69,6 +69,13 @@ function get_design_lake_png($connect, $id) {
         $backgroundColor = $theme['background'] ?? '#FFFFFF';
         $lakeColor = $theme['primary'] ?? '#1F3B5C';
 
+        if(isset($_GET['colour'])) {
+            $customColour = $_GET['colour'];
+            if(preg_match('/^#[0-9A-Fa-f]{6}$/', $customColour)) {
+                $lakeColor = $customColour;
+            }
+        }
+
         // Render PNG using GD with dynamic sizing
         $image = render_lake_thumbnail($geojson, $backgroundColor, $lakeColor, $zoom, $rotation, $panX, $panY, $width, $height);
 

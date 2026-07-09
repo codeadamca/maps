@@ -147,10 +147,6 @@ function setCachedLakeGeometry(key, results) {
   * - Implements in-memory caching for lake search results and geometries
   * - Proxies requests to Nominatim with rate limiting and retry handling
   */
-app.get('/', (_req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
 app.get('/map', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'map.html'));
 });
@@ -188,6 +184,7 @@ app.get('/api/search', async (req, res) => {
   const url = `${NOMINATIM_URL}/search?format=jsonv2&addressdetails=1&limit=6&countrycodes=us,ca&q=${encodeURIComponent(query)}`;
 
   try {
+    
     const payload = await fetchNominatimJson(url);
     const ALLOWED_CODES = new Set(['us', 'ca']);
     const results = (Array.isArray(payload) ? payload : [])
@@ -209,6 +206,7 @@ app.get('/api/search', async (req, res) => {
   } catch (error) {
     res.status(502).json({ error: 'Geocoding request failed', details: error.message });
   }
+
 });
 
 /*
@@ -299,6 +297,10 @@ app.get('/api/lake-geometry', async (req, res) => {
   } catch (error) {
     res.status(502).json({ error: 'Lake geometry request failed', details: error.message });
   }
+});
+
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.listen(PORT, () => {

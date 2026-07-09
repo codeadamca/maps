@@ -474,6 +474,3 @@ function find_session_by_cart_token($connect, $cart_token) {
     $res = mysqli_query($connect, "SELECT * FROM sessions WHERE cart_token='$cart_token' LIMIT 1");
     return mysqli_fetch_assoc($res);
 }
-
-
-funciton get_
