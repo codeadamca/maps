@@ -202,7 +202,7 @@ if (!$not_found && $session['shopify_payload']) {
 
                                                 <tr>
                                                     <td>
-                                                        <img src="https://api.lakelines.co/design/thumb/<?php echo urlencode($design_id); ?>?width=100&height=100" 
+                                                        <img src="https://api.lakelines.co/design/lake/png/<?php echo urlencode($design_id); ?>?width=100&height=100" 
                                                              alt="<?php echo htmlspecialchars($design_id); ?>"
                                                              style="max-width: 100px; border: 1px solid #ddd;">
                                                     </td>
