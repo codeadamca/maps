@@ -10,8 +10,6 @@ let displayRotation = 0;
 // DOM Elements
 const lakeSearchInput = document.getElementById('lake-search');
 const lakeSearchResults = document.getElementById('lake-search-results');
-const themeGrid = document.getElementById('theme-grid');
-const labelFont = document.getElementById('label-font');
 const labelLakeName = document.getElementById('label-lake-name');
 const labelRegion = document.getElementById('label-region');
 const labelCoordinates = document.getElementById('label-coordinates');
@@ -164,6 +162,11 @@ async function loadLakeState() {
     if (state.region) {
       state.region = normalizeRegion(state.region);
     }
+
+    // Backward compatibility: remove customer-controlled font and colour properties
+    // These are now controlled by template configuration, not stored in design state
+    delete state.colourId;
+    delete state.fontFamily;
 
     console.log('[Load Lake State] Lake state loaded:', designId);
 
@@ -816,62 +819,8 @@ function setupMouseWheelZoom() {
 */
 
 // ────────────────────────────────────────────────────────────────────────────
-// Colour System
+// Note: Colour and font customization is now controlled by template configuration
 // ────────────────────────────────────────────────────────────────────────────
-
-function getColour() {
-
-  return coloursData.colours[state.colourId] || coloursData.colours.navy;
-
-}
-
-function applyColour(colourId) {
-
-  if (!(colourId in coloursData.colours)) return;
-
-  state.colourId = colourId;
-  const colour = getColour();
-
-  // Update document background
-  lakeFrame.style.background = colour.background;
-
-  // Apply the same primary colour to all labels so they match the silhouette
-  if (lakeLabelName) lakeLabelName.style.color = colour.primary;
-  if (lakeLabelRegion) lakeLabelRegion.style.color = colour.primary;
-  if (lakeLabelCoordinates) lakeLabelCoordinates.style.color = colour.primary;
-
-  // Re-render silhouette with new colour
-  if (state.geojson) {
-    renderLakeSilhouette(state.geojson);
-  }
-
-  saveLakeState();
-
-}
-
-function renderThemeGrid() {
-
-  if (!themeGrid) return;
-
-  themeGrid.innerHTML = Object.entries(coloursData.colours).map(([colourId, colour]) => `
-    <button type="button" class="theme-item ${state.colourId === colourId ? 'theme-item--active' : ''}" data-colour-id="${colourId}" title="${colour.name}">
-      <div class="theme-swatch">
-        <div class="theme-color" style="background-color: ${colour.primary};"></div>
-      </div>
-      <span class="theme-label">${colour.name}</span>
-    </button>
-  `).join('');
-
-  // Attach click handlers
-  Array.from(themeGrid.querySelectorAll('.theme-item')).forEach(btn => {
-    btn.addEventListener('click', () => {
-      const colourId = btn.dataset.colourId;
-      applyColour(colourId);
-      renderThemeGrid(); // Re-render to show active state
-    });
-  });
-
-}
 
 // ────────────────────────────────────────────────────────────────────────────
 // Lake Search
@@ -1104,7 +1053,9 @@ function renderLakeSilhouette(geojson) {
     return;
   }
 
-  const colour = getColour();
+  // Use a default primary colour; customer-selected colours are now controlled by template configuration
+  const defaultColour = { primary: '#1e4d7b', background: '#ffffff' };
+  const colour = defaultColour;
   const type = geojson.type || '';
   let coordinates = geojson.coordinates;
 
@@ -1244,36 +1195,7 @@ function initAccordion() {
 // Font Management
 // ────────────────────────────────────────────────────────────────────────────
 
-function applyFont(fontKey) {
-
-  state.fontFamily = fontKey;
-  
-  // Look up the actual font family name from fontsData
-  // fontKey is the identifier (e.g. "playfair-display")
-  // but CSS needs the actual family name (e.g. "Playfair Display")
-  const fontConfig = fontsData.fonts[fontKey];
-  const familyName = fontConfig ? fontConfig.family : fontKey;
-  
-  // Apply font to all label text elements in the preview
-  if (lakeLabelName) lakeLabelName.style.fontFamily = `"${familyName}", serif`;
-  if (lakeLabelRegion) lakeLabelRegion.style.fontFamily = `"${familyName}", sans-serif`;
-  if (lakeLabelCoordinates) lakeLabelCoordinates.style.fontFamily = `"${familyName}", mono`;
-  
-  // Also apply font to the editable input fields so UI matches the preview
-  if (labelLakeName) labelLakeName.style.fontFamily = `"${familyName}", serif`;
-  if (labelRegion) labelRegion.style.fontFamily = `"${familyName}", sans-serif`;
-  if (labelCoordinates) labelCoordinates.style.fontFamily = `"${familyName}", mono`;
-
-  // Apply to labels container to ensure any inherited text uses the chosen family
-  const lakeLabelsArea = document.getElementById('lake-labels');
-  if (lakeLabelsArea) lakeLabelsArea.style.fontFamily = `"${familyName}", sans-serif`;
-  
-  saveLakeState();
-}
-
-labelFont.addEventListener('change', (e) => {
-  applyFont(e.target.value);
-});
+// Font application removed - fonts are now controlled by template configuration
 
 // ────────────────────────────────────────────────────────────────────────────
 // Top right buttons
@@ -1339,33 +1261,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Setup UI
   setupDocumentScaleObserver();
   initAccordion();
-
-  // Render colour grid
-  renderThemeGrid();
-
-  // Apply saved colour and font
-  applyColour(state.colourId);
-
-  // Populate font select from loaded fonts.json
-  if (labelFont && fontsData && fontsData.fonts) {
-    labelFont.innerHTML = Object.entries(fontsData.fonts).map(([key, font]) => `<option value="${escapeHtml(key)}" ${state.fontFamily === key ? 'selected' : ''}>${escapeHtml(font.family)}</option>`).join('');
-    
-    // Normalize fontFamily: convert family name to key if needed
-    let fontKey = state.fontFamily;
-    // If state.fontFamily is a family name (like "Playfair Display"), find its key
-    if (fontsData.fonts[fontKey] === undefined) {
-      // Search for the key by matching family name
-      for (const [key, font] of Object.entries(fontsData.fonts)) {
-        if (font.family === fontKey) {
-          fontKey = key;
-          break;
-        }
-      }
-    }
-    state.fontFamily = fontKey;
-    labelFont.value = fontKey;
-    applyFont(fontKey);
-  }
 
   // Restore label inputs from state
   labelLakeName.value = state.lakeName;
