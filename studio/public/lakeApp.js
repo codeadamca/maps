@@ -909,10 +909,14 @@ async function selectLakeFromSearch(lake) {
   labelRegion.value = state.region;
   labelCoordinates.value = formatCoordinates(state.lat, state.lon);
 
-  saveLakeState();
+  await saveLakeState();
 
   // Load lake geometry
   await loadLakeGeometry();
+
+  // Save again now that geometry is loaded
+  await saveLakeState();
+
   renderPreview();
 
 }
