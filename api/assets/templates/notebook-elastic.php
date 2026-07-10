@@ -1,14 +1,14 @@
 <?php
 
-error_log("[CERAMIC_MUG] GET /design/wine-tumbler/$id");
+error_log("[CERAMIC_MUG] GET /design/notebook-elastic/$id");
 
 try {
 
-    $templatePath = __DIR__ . "/wine-tumbler.png";
+    $templatePath = __DIR__ . "/notebook-elastic.png";
     $templatePath = false;
 
     $urlFontPath = __DIR__ . "/../fonts/Inter-VariableFont_opsz,wght.ttf";
-
+    
     // Design
     $design = find_design($connect, $design_id);
 
@@ -55,8 +55,8 @@ try {
     $latLon = format_coord($state['lat']).', '.format_coord($state['lon']);
 
     // Create canvas (2475 x 1155 px at 300 DPI)
-    $width = 3175;
-    $height = 950;
+    $width = 2400;
+    $height = 720;
     $image = imagecreatetruecolor($width, $height);
 
     $lakePadding = 0;

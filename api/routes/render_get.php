@@ -56,7 +56,7 @@ $ch = curl_init($url);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POST, true);
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    "Authorization: Bearer " . PRINTIFUL_API_KEY,
+    "Authorization: Bearer " . PRINTFUL_API_KEY,
     "Content-Type: application/json"
 ]);
 

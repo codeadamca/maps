@@ -1,10 +1,12 @@
 {
     "templates": {
         "47976304967845": "wine-tumbler",
-        "47976311488677": "mug-inside-15",
-        "47976311455909": "mug-inside-11",
+        "47976311488677": "mug-inside-black-15oz",
+        "47976311455909": "mug-inside-black-11oz",
         "47976307032229": "notebook-elastic",
         "47976306999461": "notebook-elastic",
-        "47976304607397": "enamel-mug"
+        "47976304607397": "enamel-mug",
+        "47997031186597": "can-cooler",
+        "47996878422181": "white-mug-11oz"
     }
 }

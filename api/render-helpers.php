@@ -39,7 +39,7 @@ function add_center_text(
     echo $text.'<br>';
     die();
     */
-    
+
     imagettftext(
         $canvas,
         $fontSize,
@@ -53,7 +53,7 @@ function add_center_text(
 
     return array(
         'x' => $textX,
-        'y' => $textY,
+        'y' => $textY - $fontSize,
         'width' => $textWidth,
         'height' => $fontSize
     );
@@ -107,7 +107,7 @@ function add_text(
 
     return array(
         'x' => $x,
-        'y' => $y,
+        'y' => $textY - $fontSize,
         'width' => max($bbox[2], $bbox[4]) - min($bbox[0], $bbox[6]),
         'height' => $fontSize
     );

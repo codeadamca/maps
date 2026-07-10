@@ -814,6 +814,9 @@ select:focus {
 #lake-label-coordinates {
   font-family: 'Cormorant', serif;
 }
+#lake-label-name {
+  text-transform: uppercase;
+}
 #lake-label-region {
   font-size: 125%;
   line-height: 1.2;

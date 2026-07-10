@@ -1,14 +1,14 @@
 <?php
 
-error_log("[CERAMIC_MUG] GET /design/wine-tumbler/$id");
+error_log("[CERAMIC_MUG] GET /design/mug-inside-black-11oz/$id");
 
 try {
 
-    $templatePath = __DIR__ . "/wine-tumbler.png";
+    $templatePath = __DIR__ . "/mug-inside-black-11oz.png";
     $templatePath = false;
 
     $urlFontPath = __DIR__ . "/../fonts/Inter-VariableFont_opsz,wght.ttf";
-
+    
     // Design
     $design = find_design($connect, $design_id);
 
@@ -29,7 +29,7 @@ try {
     // $colours = get_colours_data();
     // $colour = $colours['colours'][$state['colourId']]['primary'];
     $colour = '#000000';
-    $accentColour = '#a8c4c4';
+    $accentColour = '#000000';
 
     // Fonts
     // $fonts = get_fonts_data();
@@ -55,8 +55,8 @@ try {
     $latLon = format_coord($state['lat']).', '.format_coord($state['lon']);
 
     // Create canvas (2475 x 1155 px at 300 DPI)
-    $width = 3175;
-    $height = 950;
+    $width = 2700;
+    $height = 1050;
     $image = imagecreatetruecolor($width, $height);
 
     $lakePadding = 0;
