@@ -32,8 +32,18 @@ function get_design_lake_svg($connect, $id) {
     }
 
     // Colours
-    $colours = get_colours_data();
-    $colour = $colours['colours'][$state['colourId']]['primary'];
+    // $colours = get_colours_data();
+    // $colour = $colours['colours'][$state['colourId']]['primary'];
+
+    $backgroundColor = '#FFFFFF';
+    $lakeColor = '#000000';
+
+    if(isset($_GET['colour'])) {
+        $customColour = $_GET['colour'];
+        if(preg_match('/^#[0-9A-Fa-f]{6}$/', $customColour)) {
+            $lakeColor = $customColour;
+        }
+    }
 
     $paths = '';
 
@@ -170,14 +180,14 @@ function get_design_lake_svg($connect, $id) {
                 foreach ($geo['coordinates'] as $ring) {
                     $d .= $buildPathFromRing($ring);
                 }
-                $paths .= '<path d="' . $d . '" fill="' . $colour . '" fill-rule="evenodd" stroke="none" />';
+                $paths .= '<path d="' . $d . '" fill="' . $lakeColor . '" fill-rule="evenodd" stroke="none" />';
             } elseif ($type === 'MultiPolygon') {
                 foreach ($geo['coordinates'] as $poly) {
                     $d = '';
                     foreach ($poly as $ring) {
                         $d .= $buildPathFromRing($ring);
                     }
-                    $paths .= '<path d="' . $d . '" fill="' . $colour . '" fill-rule="evenodd" stroke="none" />';
+                    $paths .= '<path d="' . $d . '" fill="' . $lakeColor . '" fill-rule="evenodd" stroke="none" />';
                 }
             } elseif ($type === 'LineString' || $type === 'MultiLineString') {
                 $lines = $geo['coordinates'];
@@ -191,7 +201,7 @@ function get_design_lake_svg($connect, $id) {
                         if ($first) { $d .= 'M ' . $x . ' ' . $y . ' '; $first = false; }
                         else { $d .= 'L ' . $x . ' ' . $y . ' '; }
                     }
-                    $paths .= '<path d="' . $d . '" fill="none" stroke="' . $colour . '" stroke-width="1.5" />';
+                    $paths .= '<path d="' . $d . '" fill="none" stroke="' . $lakeColor . '" stroke-width="1.5" />';
                 }
             } elseif ($type === 'Point' || $type === 'MultiPoint') {
                 $pts = $geo['coordinates'];
@@ -199,7 +209,7 @@ function get_design_lake_svg($connect, $id) {
                 foreach ($pts as $pt) {
                     $x = $transformX($pt[0]);
                     $y = $transformY($pt[1]);
-                    $paths .= '<circle cx="' . $x . '" cy="' . $y . '" r="2" fill="' . $colour . '" />';
+                    $paths .= '<circle cx="' . $x . '" cy="' . $y . '" r="2" fill="' . $lakeColor . '" />';
                 }
             }
         }

@@ -61,13 +61,16 @@ function get_design_lake_png($connect, $id) {
         }
 
         // Load theme colours
-        $coloursPath = __DIR__.'/../cursor/public/data/colours.json';
-        $coloursData = load_colours_data($coloursPath);
+        // $coloursPath = __DIR__.'/../cursor/public/data/colours.json';
+        // $coloursData = load_colours_data($coloursPath);
 
         // Get theme colours (with fallback to navy)
-        $theme = $coloursData[$colourId] ?? $coloursData['navy'] ?? [];
-        $backgroundColor = $theme['background'] ?? '#FFFFFF';
-        $lakeColor = $theme['primary'] ?? '#1F3B5C';
+        // $theme = $coloursData[$colourId] ?? $coloursData['navy'] ?? [];
+        // $backgroundColor = $theme['background'] ?? '#FFFFFF';
+        // $lakeColor = $theme['primary'] ?? '#1F3B5C';
+
+        $backgroundColor = '#FFFFFF';
+        $lakeColor = '#000000';
 
         if(isset($_GET['colour'])) {
             $customColour = $_GET['colour'];

@@ -26,13 +26,15 @@ try {
     }
 
     // Colours
-    $colours = get_colours_data();
-    $colour = $colours['colours'][$state['colourId']]['primary'];
+    // $colours = get_colours_data();
+    // $colour = $colours['colours'][$state['colourId']]['primary'];
+    $colour = '#000000';
 
     // Fonts
-    $fonts = get_fonts_data();
-    $font = $fonts['fonts'][$state['fontFamily']]['local'];
-    $fontPath = __DIR__ . "/../fonts/".$font;
+    // $fonts = get_fonts_data();
+    // $font = $fonts['fonts'][$state['fontFamily']]['local'];
+    // $fontPath = __DIR__ . "/../fonts/".$font;
+    $fontPath = __DIR__ . "/../fonts/CormorantGaramond-Regular.ttf";
 
     if (!file_exists($fontPath)) {
         error_log("[CERAMIC_MUG] Font not found: " . $fontPath);
@@ -46,7 +48,7 @@ try {
         respond(false, ["error" => "Logo    not found"]);
     }
 
-    $lakePath = 'https://api.lakelines.co/design/lake/png/'.$design_id.'?width=1050&height=1050';
+    $lakePath = 'https://api.lakelines.co/design/lake/png/'.$design_id.'?width=1050&height=1050&colour='.urlencode($colour);
 
     // Extract lake name
     $lakeName = $state['lakeName'];
@@ -74,7 +76,7 @@ try {
     $boxY = 10;
     $boxWidth = 1200;
 
-    add_center_text(
+    $data = add_center_text(
         $image,
         2120 - 580,
         350,
@@ -82,7 +84,7 @@ try {
         $colour,
         67,
         $fontPath,
-        strtoupper($lakeName)); 
+        strtoupper($lakeName));
 
     add_center_text(
         $image,
@@ -132,10 +134,10 @@ try {
 
     add_rectangle(
         $image, 
-        2120 - 250, 
+        2120 - $data['width'] / 2, 
         500, 
         fade_color($colour, 50), 
-        500, 
+        $data['width'], 
         6);
 
     if($templatePath && file_exists($templatePath)) 
