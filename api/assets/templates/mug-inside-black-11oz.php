@@ -84,7 +84,7 @@ try {
     imageantialias($image, true);
 
     // Calulate font sizes based on image height
-    $fontSizeLarge = $height * 0.08;
+    $fontSizeLarge = $height * 0.06;
     $fontSizeMedium = $fontSizeLarge * 0.5;
     $fontSizeSmall = $fontSizeLarge * 0.4;
 

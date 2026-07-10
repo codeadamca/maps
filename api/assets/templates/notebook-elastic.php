@@ -28,8 +28,8 @@ try {
     // Colours
     // $colours = get_colours_data();
     // $colour = $colours['colours'][$state['colourId']]['primary'];
-    $colour = '#000000';
-    $accentColour = '#a8c4c4';
+    $colour = '#ffffff';
+    $accentColour = '#d4f4fc';
 
     // Fonts
     // $fonts = get_fonts_data();
@@ -55,20 +55,13 @@ try {
     $latLon = format_coord($state['lat']).', '.format_coord($state['lon']);
 
     // Create canvas (2475 x 1155 px at 300 DPI)
-    $width = 2400;
-    $height = 720;
+    $width = 900;
+    $height = 1500;
     $image = imagecreatetruecolor($width, $height);
 
     $lakePadding = 0;
-    $lakeWidth = $width / 2 - $lakePadding * 2;
-    $lakeHeight = $height - $lakePadding * 2;
-
-    // Make the width and height the smaller of the two values
-    if ($lakeWidth > $lakeHeight) {
-        $lakeWidth = $lakeHeight;
-    } else {
-        $lakeHeight = $lakeWidth;
-    }
+    $lakeWidth = 900;
+    $lakeHeight = 900;
 
     $lakePath = 'https://api.lakelines.co/design/lake/png/'.$design_id.'?width='.$lakeWidth.'&height='.$lakeHeight.'&colour='.urlencode($accentColour);
 
@@ -84,7 +77,7 @@ try {
     imageantialias($image, true);
 
     // Calulate font sizes based on image height
-    $fontSizeLarge = $height * 0.08;
+    $fontSizeLarge = $width * 0.06;
     $fontSizeMedium = $fontSizeLarge * 0.5;
     $fontSizeSmall = $fontSizeLarge * 0.4;
 
@@ -99,7 +92,7 @@ try {
     $logoGapA = $logoFontSize * 0.3;
     $logoGapB = $logoFontSize * 2;
 
-    $start = ($height - 
+    $start = $width - 100 + ( 700 -
         $fontSizeLarge - $fontSizeMedium - $fontSizeSmall - 
         $gapA - $gapB - $gapC - 
         $rectWidth - 
@@ -107,9 +100,9 @@ try {
 
     $data = add_center_text(
         $image,
-        $width / 2,
+        0,
         $start,
-        $width / 2,
+        $width,
         $colour,
         $fontSizeLarge,
         $fontPath,
@@ -117,9 +110,9 @@ try {
 
     add_center_text(
         $image,
-        $width / 2,
+        0,
         $data['y'] + $fontSizeLarge + $gapA,
-        $width / 2,
+        $width,
         $colour,
         $fontSizeMedium,
         $fontPath,
@@ -127,7 +120,7 @@ try {
 
     add_rectangle(
         $image, 
-        $width * 0.75 - $data['width'] / 2, 
+        $width / 2 - $data['width'] / 2, 
         $data['y'] + $fontSizeLarge + $fontSizeMedium + $gapA + $gapB, 
         fade_color($accentColour, 100), 
         $data['width'], 
@@ -135,9 +128,9 @@ try {
 
     add_center_text(
         $image,
-        $width / 2,
+        0,
         $data['y'] + $fontSizeLarge + $fontSizeMedium + $gapA + $gapB + $gapC + $rectWidth, 
-        $width / 2,
+        $width,
         $colour,
         $fontSizeSmall,
         $fontPath,
@@ -145,9 +138,9 @@ try {
 
     add_center_text(
         $image,
-        $width / 2,
+        0,
         $height - $logoFontSize - $logoGapB,
-        $width / 2,
+        $width,
         $colour,
         $logoFontSize,
         $urlFontPath,
@@ -155,7 +148,7 @@ try {
 
     add_image(
         $image,
-        $width * 0.75 - $logoMarkSize / 2,
+        $width / 2 - $logoMarkSize / 2,
         $height - $logoFontSize - $logoGapA - $logoGapB - $logoMarkSize,
         $markPath,
         $logoMarkSize,
@@ -164,7 +157,7 @@ try {
 
     add_remote_image(
         $image, 
-        $width * 0.25 - $lakeWidth / 2,
+        $lakePadding,
         $lakePadding,
         $lakePath
     );
