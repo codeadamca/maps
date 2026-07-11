@@ -172,10 +172,10 @@ if (!$not_found && $session['shopify_payload']) {
                                         <thead>
                                             <tr class="w3-light-grey">
                                                 <th></th>
+                                                <th></th>
                                                 <th>Product</th>
                                                 <th>Quantity</th>
                                                 <th>Price</th>
-                                                <th>Design ID</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -198,47 +198,71 @@ if (!$not_found && $session['shopify_payload']) {
                                                     }
                                                 }
 
+                                                // Fetch design details from API
+                                                $design_data = null;
+                                                $lake_name = '';
+                                                $region = '';
+                                                $lat = '';
+                                                $lon = '';
+
+                                                $design_url = "https://api.lakelines.co/design/" . urlencode($design_id);
+                                                $response = @file_get_contents($design_url);
+                                                
+                                                if ($response) {
+                                                    $design_data = json_decode($response, true);
+                                                    
+                                                    if ($design_data && isset($design_data['design']['state_json'])) {
+                                                        $state = $design_data['design']['state_json'];
+                                                        $lake_name = $state['lakeName'] ?? '';
+                                                        $region = $state['region'] ?? '';
+                                                        $lat = $state['lat'] ?? '';
+                                                        $lon = $state['lon'] ?? '';
+                                                    }
+                                                }
+
                                                 ?>
 
                                                 <tr>
                                                     <td>
-                                                        <img src="https://api.lakelines.co/design/lake/png/<?php echo urlencode($design_id); ?>?width=100&height=100" 
-                                                             alt="<?php echo htmlspecialchars($design_id); ?>"
-                                                             style="max-width: 100px; border: 1px solid #ddd;">
+                                                        <img src="https://api.lakelines.co/design/lake/png/<?php echo urlencode($design_id); ?>?width=200&height=200" 
+                                                             style="max-width: 200px; border: 1px solid #ddd; background-color: #fff;">
                                                     </td>
                                                     <td>
-                                                        <?php echo htmlspecialchars($item['title'] ?? ''); ?>
+
+                                                        <?php
+
+                                                        $bgColor = '#fff';
+                                                        if($item['variant_id'] == 47976307032229 or
+                                                            $item['variant_id'] == 47976306999461 )
+                                                        {
+                                                            $bgColor = '#333';
+                                                        }
+
+                                                        ?>
+
+                                                        <a href="https://api.lakelines.co/template/<?=$design_id?>/<?=$item['variant_id']?>">
+                                                            <img src="https://api.lakelines.co/template/<?=$design_id?>/<?=$item['variant_id']?>"
+                                                                style="max-width: 200px; border: 1px solid #ddd; background-color: <?=$bgColor; ?>">
+                                                        </a>
+                                                    </td>
+                                                    <td>
+                                                        <h3><?php echo htmlspecialchars($item['title'] ?? ''); ?></h3>
+                                                        External ID: <?php echo htmlspecialchars($item['variant_id'] ?? ''); ?>
                                                         <br>
-                                                        <?php echo htmlspecialchars($item['variant_id'] ?? ''); ?>
+                                                        Design ID: <?php echo htmlspecialchars($design_id); ?>
+                                                        <br>
+                                                        Lake Name: <?php echo htmlspecialchars($lake_name ? $lake_name : ''); ?>
+                                                        <br>
+                                                        Region: <?php echo htmlspecialchars($region ? $region : ''); ?>
+                                                        <br>
+                                                        Long/Lat: <?php echo htmlspecialchars($lat ? $lat.', '.$lon : ''); ?>
                                                     </td>
                                                     <td><?php echo htmlspecialchars($item['quantity'] ?? '1'); ?></td>
-                                                    <td><?php echo htmlspecialchars($item['price'] ?? '-'); ?></td>
-                                                    <td><?php echo htmlspecialchars($design_id); ?></td>
+                                                    <td>$<?php echo htmlspecialchars($item['price'] ?? '-'); ?></td>
                                                 </tr>
                                             <?php endforeach; ?>
                                         </tbody>
                                     </table>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endif; ?>
-                    
-                    <!-- Design Thumbnails -->
-                    <?php if (!empty($design_ids)): ?>
-                        <div class="w3-card w3-margin-bottom">
-                            <div class="w3-container w3-light-grey">
-                                <h3>Design Thumbnails</h3>
-                            </div>
-                            <div class="w3-container w3-padding">
-                                <div class="w3-row">
-                                    <?php foreach ($design_ids as $design_id): ?>
-                                        <div class="w3-col m3 w3-margin-bottom w3-center">
-                                            <img src="https://api.lakelines.co/design/thumb/<?php echo urlencode($design_id); ?>?&width=200&height=200" 
-                                                 alt="<?php echo htmlspecialchars($design_id); ?>"
-                                                 style="max-width: 100%; border: 1px solid #ddd; padding: 4px;">
-                                            <p class="w3-small w3-text-grey"><?php echo htmlspecialchars($design_id); ?></p>
-                                        </div>
-                                    <?php endforeach; ?>
                                 </div>
                             </div>
                         </div>
