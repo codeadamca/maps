@@ -85,6 +85,7 @@ if (!$not_found && $session['shopify_payload']) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Admin Console - Session</title>
     <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
     <div class="w3-row">

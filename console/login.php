@@ -39,6 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Admin Console - Login</title>
     <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body class="w3-light-grey">
     <div class="w3-container w3-center" style="margin-top: 100px;">
