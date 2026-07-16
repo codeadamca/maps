@@ -92,7 +92,7 @@ if (!$not_found && $session['shopify_payload']) {
         <!-- Sidebar -->
         <div class="w3-col m2 w3-light-grey" style="min-height: 100vh;">
             <div class="w3-padding">
-                <h3 class="w3-text-dark-grey">Lake Lines</h3>
+                <h3 class="w3-text-dark-grey">Lakelines</h3>
                 <p class="w3-small w3-text-grey">Admin Console</p>
                 
                 <ul style="list-style: none; padding: 0; margin: 0; margin-top: 24px;">

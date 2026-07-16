@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="w3-container w3-center" style="margin-top: 100px;">
         <div class="w3-card w3-white" style="max-width: 400px; margin: 0 auto;">
             <div class="w3-container w3-theme" style="background-color: #2c3e50;">
-                <h2 class="w3-text-white w3-margin">Lake Lines Admin</h3>
+                <h2 class="w3-text-white w3-margin">Lakelines Admin</h3>
             </div>
             
             <div class="w3-container w3-padding-32">
