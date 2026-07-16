@@ -42,7 +42,7 @@ try {
         respond(false, ["error" => "Font not found"]);
     }
 
-    $markPath = __DIR__ . "/../images/lakelines_mark.png";
+    $markPath = __DIR__ . "/../images/lakelines_mark_white.png";
 
     if (!file_exists($markPath)) {
         error_log("[CERAMIC_MUG] Logo not found: " . $markPath);

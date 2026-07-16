@@ -45,7 +45,7 @@ try {
         respond(false, ["error" => "Font not found"]);
     }
 
-    $markPath = __DIR__ . "/../images/lakelines_mark.png";
+    $markPath = __DIR__ . "/../images/lakelines_mark_white.png";
 
     if (!file_exists($markPath)) {
         error_log("[CERAMIC_MUG] Logo not found: " . $markPath);
@@ -126,6 +126,14 @@ try {
             5
         );
     }
+
+    add_rectangle(
+        $image, 
+        0, 
+        0, 
+        '#286971',
+        $width, 
+        $height);
 
     $data = add_center_text(
         $image,

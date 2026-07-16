@@ -234,7 +234,8 @@ if (!$not_found && $session['shopify_payload']) {
 
                                                         $bgColor = '#fff';
                                                         if($item['variant_id'] == 47976307032229 or
-                                                            $item['variant_id'] == 47976306999461 )
+                                                            $item['variant_id'] == 47976306999461 or
+                                                            $item['variant_id'] == 48009208430757 )
                                                         {
                                                             $bgColor = '#333';
                                                         }

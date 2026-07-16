@@ -99,7 +99,7 @@ try {
     $logoGapA = $logoFontSize * 0.3;
     $logoGapB = $logoFontSize * 2;
 
-    $start = 950 + (630 - 
+    $start = 900 + (680 - 
         $fontSizeLarge - $fontSizeMedium - $fontSizeSmall - 
         $gapA - $gapB - $gapC - 
         $rectWidth - 
