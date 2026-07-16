@@ -44,6 +44,24 @@ document.addEventListener('DOMContentLoaded', function() {
             link.style.fontWeight = '600';
         }
     });
+
+    /* FAQ accordion behavior */
+    const faqButtons = document.querySelectorAll('.faq-question');
+    faqButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const item = this.closest('.faq-item');
+            const isOpen = item.classList.contains('open');
+            if (isOpen) {
+                item.classList.remove('open');
+                this.setAttribute('aria-expanded', 'false');
+                this.querySelector('.faq-toggle').textContent = '+';
+            } else {
+                item.classList.add('open');
+                this.setAttribute('aria-expanded', 'true');
+                this.querySelector('.faq-toggle').textContent = '−';
+            }
+        });
+    });
 });
 
 // Optional: Track when users click external CTA links for analytics

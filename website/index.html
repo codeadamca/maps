@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lakelines Co. - Custom Lake Artwork & Maps</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
@@ -12,7 +15,7 @@
     <nav class="navbar">
         <div class="container">
             <div class="nav-brand">
-                <a href="index.html"><img src="images/logo.png" alt="Lakelines Co." width="100"></a>
+                <a href="index.html"><img src="images/logo.png" alt="Lakelines Co." width="200"></a>
             </div>
             <ul class="nav-links">
                 <li><a href="index.html">Home</a></li>
@@ -31,16 +34,78 @@
             <source src="videos/home.mp4" type="video/mp4">
         </video>
         <div class="hero-content">
-            <h1>Turn any lake into custom wall art</h1>
-            <p class="hero-subtitle">From detailed maps to minimalist silhouettes, create artwork inspired by your favourite places.</p>
+            <h1>Every Lake Has A Story</h1>
+            <p class="hero-subtitle">
+                Transform the lake you love into everyday products.
+            </p>
+            <!--
             <div class="hero-buttons">
                 <a href="https://studio.lakelines.co/map" class="btn btn-primary">Design a Map</a>
                 <a href="https://studio.lakelines.co/lake" class="btn btn-secondary">Find My Lake</a>
             </div>
+            -->
         </div>
-        <!-- hero image removed: background video used instead -->
     </section>
 
+    <!-- Three icons about the steps displayed in three columns 1. Find Lake 2. Create Designs 3. Shop -->
+    <section class="steps-section">
+        <div class="container">
+            <div class="steps-grid">
+                <div class="step">
+                    <img src="images/icons/search.svg" alt="Search Icon" class="step-icon">
+                    <h3>Find Your Lake</h3>
+                    <p>Search for your favorite lake from thousands of options worldwide.</p>
+                </div>
+                <div class="step">
+                    <img src="images/icons/design.svg" alt="Design Icon" class="step-icon">
+                    <h3>Create Your Design</h3>
+                    <p>Our software transforms your lake into a clean, modern illustration.</p>
+                </div>
+                <div class="step">
+                    <img src="images/icons/shop.svg" alt="Shop Icon" class="step-icon">
+                    <h3>Shop Your Lake</h3>
+                    <p>Choose from mugs, tumblers, water bottles, can coolers, notebooks, and more.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why people buy section -->
+    <section class="why-buy-section">
+        <div class="container">
+            <h2>Why People Buy</h2>
+            <p>Our lakes become part of who we are.</p>
+            <p>They're where families gather. Where kids learn to fish. Where mornings begin with coffee on the dock.</p>
+            <p>Lakelines lets you carry those memories long after you leave the cottage.</p>
+        </div>
+    </section>
+
+    <!-- Three columns of product categories 1. Morning Coffee 2. Around the Campfire 3. In the Cottage -->
+     <section class="category-section">
+        <div class="container">
+            <div class="steps-grid">
+                <div class="step">
+                    <h3>Morning Coffee</h3>
+                    <img src="images/morning-coffee.webp" alt="Search Icon" class="step-image">
+                    <br>
+                    <a href="https://studio.lakelines.co/" class="btn btn-primary">Find my Lake</a>
+                </div>
+                <div class="step">
+                    <h3>Around the Campfire</h3>
+                    <img src="images/around-campfire.webp" alt="Design Icon" class="step-image">
+                    <br>
+                    <a href="https://studio.lakelines.co/" class="btn btn-primary">Find my Lake</a>
+                </div>
+                <div class="step">
+                    <h3>In the Cottage</h3>
+                    <img src="images/in-the-cottage.webp" alt="Shop Icon" class="step-image">
+                    <br>
+                    <a href="https://studio.lakelines.co/" class="btn btn-primary">Find my Lake</a>
+                </div>
+            </div>
+        </div>
+    </section>
+    
     <!-- Two Product Paths Section -->
     <section class="products-section">
         <div class="container">
@@ -76,25 +141,86 @@
         </div>
     </section>
 
-    <!-- How It Works Section -->
-    <section class="how-it-works">
+    <!-- FAQ section -->
+    <section class="faq-section">
         <div class="container">
-            <h2>How it works</h2>
-            <div class="steps">
-                <div class="step">
-                    <div class="step-number">1</div>
-                    <h3>Choose a lake</h3>
-                    <p>Search and select from thousands of lakes worldwide.</p>
+            <h2>Frequently Asked Questions</h2>
+            <p class="faq-intro">Our lakes become part of who we are — where families gather, where kids learn to fish, and where mornings begin with coffee on the dock. Below are answers to common questions.</p>
+
+            <div class="faq-grid">
+                <div class="faq-item">
+                    <button class="faq-question" aria-expanded="false">
+                        Can I choose any lake?<span class="faq-toggle">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        Yes. Simply search using our
+                        <a href="https://studio.lakelines.co">Lakelines Studio</a> 
+                        and select the lake you want.
+                    </div>
                 </div>
-                <div class="step">
-                    <div class="step-number">2</div>
-                    <h3>Customize your design</h3>
-                    <p>Personalize colors, styles, and details to match your vision.</p>
+
+                <div class="faq-item">
+                    <button class="faq-question" aria-expanded="false">
+                        Do you use real map data?
+                        <span class="faq-toggle">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        Yes. Each lake outline is generated from geographic data to accurately 
+                        represent the shoreline.</div>
                 </div>
-                <div class="step">
-                    <div class="step-number">3</div>
-                    <h3>Order printed products</h3>
-                    <p>Get your custom artwork printed on maps, silhouettes, mugs, and more.</p>
+
+                <div class="faq-item">
+                    <button class="faq-question" aria-expanded="false">
+                        Can I edit the text?
+                        <span class="faq-toggle">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        Yes. Every design includes lake name, location and coordinates; the lake 
+                        name and location are editable. Future updates will include custom 
+                        waypoints and personal points of interest.</div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" aria-expanded="false">
+                        What if my lake has multiple names?
+                        <span class="faq-toggle">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        Lake names will default to the official lake name listed in our geographic 
+                        data; however, you can change the name if necessary.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" aria-expanded="false">
+                        Can I preview my products?
+                        <span class="faq-toggle">+</span></button>
+                    <div class="faq-answer">
+                        Absolutely! Our store includes product previews using a variety of different
+                        lakes. Our studio will provide a greneric preview of lake outline and
+                        data. If you would like a preview of your lake on our products, submit a 
+                        request, and we'll send you a link when it's ready.</div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" aria-expanded="false">
+                        How long does shipping take?
+                        <span class="faq-toggle">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        Typical shipping time is 10 to 15 days, depending on destination and 
+                        product.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" aria-expanded="false">
+                        Is every product made to order?
+                        <span class="faq-toggle">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        Yes. Each item is custom printed specifically for your order.
+                    </div>
                 </div>
             </div>
         </div>
