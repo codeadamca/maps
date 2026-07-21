@@ -30,6 +30,15 @@ body {
     padding: 0 20px;
 }
 
+.step-divider {
+    border-top: 3px solid #2c5aa0;
+    border-bottom: none;
+    border-left: none;
+    border-right: none;
+    margin: 0 auto 1rem;
+    width: 50%;
+}
+
 /* ========================================
    TYPOGRAPHY
    ======================================== */
@@ -45,19 +54,19 @@ h1 {
 
 h2 {
     font-size: 2.5rem;
-    font-weight: 300;
+    font-weight: 700;
     line-height: 1.2;
     letter-spacing: -0.3px;
     margin-bottom: 2rem;
-    color: #1a1a1a;
+    color: #2c5aa0;
 }
 
 h3 {
     font-size: 1.5rem;
-    font-weight: 400;
+    font-weight: 600;
     letter-spacing: -0.2px;
     margin-bottom: 1rem;
-    color: #2c2c2c;
+    color: #2c5aa0;
 }
 
 p {
@@ -107,6 +116,12 @@ a:hover {
     display: flex;
     list-style: none;
     gap: 2.5rem;
+    align-items: center; /* vertically center nav items */
+}
+
+.nav-links li {
+    display: flex;
+    align-items: center;
 }
 
 .nav-links a {
@@ -119,6 +134,24 @@ a:hover {
 
 .nav-links a:hover {
     color: #2c5aa0;
+}
+
+/* Style the Shop nav link like the primary button (no HTML changes needed) */
+.nav-links a[href*="shop.lakelines.co"] {
+    display: inline-block;
+    padding: 0.9rem 1.25rem;
+    background-color: #2c5aa0;
+    color: #ffffff;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.nav-links a[href*="shop.lakelines.co"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(44, 90, 160, 0.15);
+    color: #ffffff;
 }
 
 /* ========================================
@@ -193,7 +226,7 @@ a:hover {
     align-items: center;
     gap: 4rem;
     padding: 6rem 20px;
-    background: linear-gradient(135deg, rgba(250,250,248,0.85) 0%, rgba(245,241,237,0.85) 100%);
+    background-color: #000; /* make hero banner background black */
     min-height: 600px;
     position: relative;
     overflow: hidden;
@@ -207,12 +240,18 @@ a:hover {
     height: 100%;
     object-fit: cover;
     z-index: 0;
+    opacity: 0.6; /* make hero video 70% opaque */
 }
 
 /* Ensure hero content sits above the video */
 .hero-content {
     position: relative;
     z-index: 1;
+    grid-column: 1 / -1; /* span both hero columns */
+    width: 100%;
+    max-width: none;
+    padding: 0 20px;
+    text-align: center;
 }
 
 /* Optional subtle overlay to improve text contrast */
@@ -367,16 +406,21 @@ a:hover {
 }
 
 .steps-grid .step-icon {
-    width: 88px;
-    height: 88px;
+    max-width: 300px;
+    height: auto
     object-fit: contain;
     margin-bottom: 1rem;
+    border-radius: 12px;
+    display: inline-block;
 }
+
 .steps-grid .step-image {
     max-width: 300px;
     max-height: 300px;
-    object-fit: contain;
+    object-fit: cover;
     margin-bottom: 1rem;
+    border-radius: 12px;
+    display: inline-block;
 }
 
 @media (max-width: 768px) {
@@ -444,20 +488,61 @@ a:hover {
    ======================================== */
 .why-buy-section {
     padding: 6rem 20px;
-    background-color: #fafafa; /* light grey */
+    background-color: #467b82; /* updated per request */
 }
 
 .why-buy-section h2 {
     text-align: center;
     margin-bottom: 2rem;
+    color: #ffffff;
 }
 
 .why-buy-section p {
     max-width: 900px;
     margin: 0 auto 1rem;
     font-size: 1.05rem;
-    color: #5a5a5a;
+    color: #e6e6e6;
     line-height: 1.8;
+}
+
+/* two-column layout for Why People Buy */
+.why-buy-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5rem;
+    align-items: center;
+}
+
+.why-buy-text {
+    max-width: 680px;
+}
+
+.why-buy-text h2 {
+    text-align: left;
+}
+
+.why-buy-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 12px;
+    box-shadow: none; /* remove shadow/border look */
+    background-color: transparent; /* ensure no white background */
+    border: none;
+    object-fit: cover;
+}
+
+.why-buy-image {
+    background: transparent; /* remove white background for right column */
+}
+
+@media (max-width: 768px) {
+    .why-buy-grid {
+        grid-template-columns: 1fr;
+    }
+    .why-buy-text {
+        max-width: 100%;
+    }
 }
 
 @media (max-width: 768px) {
@@ -487,8 +572,8 @@ a:hover {
 }
 
 .faq-grid {
-    
-    grid-template-columns: repeat(2, 1fr);
+    display: grid;
+    grid-template-columns: 1fr; /* single column of questions */
     gap: 1rem 2rem;
     max-width: 1200px;
     margin: 0 auto;
@@ -509,6 +594,7 @@ a:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    font-weight: 700; /* make questions bold */
 }
 
 .faq-question:focus {
@@ -560,6 +646,7 @@ a:hover {
 .gallery-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: 300px; /* two rows of 300px each when there are 6 items */
     gap: 2rem;
 }
 
@@ -577,7 +664,7 @@ a:hover {
 
 .gallery-item img {
     width: 100%;
-    height: 300px;
+    height: 100%;
     object-fit: cover;
     display: block;
 }
@@ -592,7 +679,7 @@ a:hover {
     height: 400px;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 900px) {
     .gallery-grid {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -656,15 +743,24 @@ a:hover {
     }
 }
 
+/* Make About page final CTA match home page light grey */
+.page-about .final-cta {
+    background-color: #fafafa;
+}
+
+/* Also make Contact page final CTA use same light grey */
+.page-contact .final-cta {
+    background-color: #fafafa;
+}
+
 /* ========================================
    PAGE HEADER
    ======================================== */
 
 .page-header {
     padding: 4rem 20px;
-    background: linear-gradient(135deg, #fafaf8 0%, #f5f1ed 100%);
+    background-color: #000000;
     text-align: center;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .page-header h1 {
@@ -674,6 +770,55 @@ a:hover {
 .page-header p {
     font-size: 1.1rem;
     color: #5a5a5a;
+}
+
+/* Page-specific header banners */
+.page-about .page-header,
+.page-contact .page-header {
+    padding: 6rem 20px;
+    min-height: 320px;
+    display: flex;
+    align-items: center;
+    position: relative; /* allow pseudo-element for image */
+    overflow: hidden;
+}
+
+.page-about .page-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url('images/banner-island.png');
+    background-size: cover;
+    background-position: center;    
+    opacity: 1; /* image at 70% opacity */
+    z-index: 0;
+}
+
+.page-contact .page-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url('images/banner-trees.png');
+    background-size: cover;
+    background-position: center;    
+    opacity: 0.8; /* image at 70% opacity */
+    z-index: 0;
+}
+
+.page-about .page-header h1,
+.page-contact .page-header h1 {
+    color: #ffffff;
+    text-shadow: 0 4px 12px rgba(0,0,0,0.45);
+    font-weight: 700;
+    position: relative; /* ensure text sits above pseudo-image */
+    z-index: 1;
+}
+
+.page-about .page-header p,
+.page-contact .page-header p {
+    color: rgba(255,255,255,0.95);
+    position: relative;
+    z-index: 1;
 }
 
 /* ========================================
@@ -796,7 +941,6 @@ a:hover {
     color: white;
     padding: 2rem 20px;
     text-align: center;
-    margin-top: 2rem;
 }
 
 .footer p {

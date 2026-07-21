@@ -134,6 +134,9 @@ function add_rectangle($canvas, $x, $y, $colour, $width, $height) {
     // Draw filled rectangle from (x,y) to (x+width, y+height)
     imagefilledrectangle($canvas, $x, $y, $x + $width, $y + $height, $col);
 
+    // $transparent = imagecolorallocatealpha($canvas, 33, 33, 33, 0);
+    // imagefill($canvas, 0, 0, $transparent);
+
     return array(
         'x' => $x,
         'y' => $y,
@@ -201,11 +204,16 @@ function add_image($canvas, $x, $y, $imagePath, $width = null, $height = null, $
         return false;
     }
 
+    imagealphablending($canvas, true);
+    imagesavealpha($canvas, true);
+
     $ext = strtolower(pathinfo($imagePath, PATHINFO_EXTENSION));
 
     switch ($ext) {
         case 'png':
             $image = imagecreatefrompng($imagePath);
+            imagealphablending($image, false);
+            imagesavealpha($image, true);
             break;
 
         case 'jpg':
@@ -230,6 +238,7 @@ function add_image($canvas, $x, $y, $imagePath, $width = null, $height = null, $
 
     // If fully opaque, copy directly to canvas (preserve alpha for PNGs)
     if ((int)$opacity === 100) {
+
         if ($dstW !== $srcWidth || $dstH !== $srcHeight) {
             imagecopyresampled(
                 $canvas,
@@ -260,6 +269,7 @@ function add_image($canvas, $x, $y, $imagePath, $width = null, $height = null, $
         return true;
     }
 
+    /*
     // For partial transparency, prepare an overlay and merge with specified opacity
     $overlay = imagecreatetruecolor($dstW, $dstH);
     imagealphablending($overlay, false);
@@ -304,7 +314,8 @@ function add_image($canvas, $x, $y, $imagePath, $width = null, $height = null, $
 
     imagedestroy($overlay);
     imagedestroy($image);
-
+    */
+    
     return array(
         'x' => $x,
         'y' => $y,

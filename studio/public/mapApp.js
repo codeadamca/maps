@@ -15,7 +15,7 @@ const state = {
   orientation: 'portrait',
   city: 'Manicouagan Reservoir',
   country: 'Quebec, Canada',
-  fontFamily: 'Playfair Display',
+  fontFamily: 'Inter',
   center: [...DEFAULT_CENTER],
   zoom: DEFAULT_ZOOM,
   bearing: 0,

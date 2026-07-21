@@ -61,6 +61,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.querySelector('.faq-toggle').textContent = '−';
             }
         });
+        // allow toggling with Enter or Space when focused
+        btn.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.click();
+            }
+        });
     });
 });
 

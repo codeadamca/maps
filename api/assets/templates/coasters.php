@@ -1,6 +1,6 @@
 <?php
 
-error_log("[CERAMIC_MUG] GET /design/notebook-elastic/$id");
+error_log("[CERAMIC_MUG] GET /design/notebook-elastic/$design_id");
 
 try {
 
@@ -62,15 +62,14 @@ try {
     $height = 1193;
     $image = imagecreatetruecolor($width, $height);
 
+    imagealphablending($image, true);
+    imagesavealpha($image, true);
+
     $lakePadding = 0;
     $lakeWidth = 700;
     $lakeHeight = 700;
 
     $lakePath = 'https://api.lakelines.co/design/lake/png/'.$design_id.'?width='.$lakeWidth.'&height='.$lakeHeight.'&colour='.urlencode($accentColour);
-
-    // Enable alpha channel
-    imagealphablending($image, false);
-    imagesavealpha($image, true);
 
     // Fully transparent background
     $transparent = imagecolorallocatealpha($image, 255, 255, 255, 127);

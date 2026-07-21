@@ -1008,10 +1008,48 @@ function renderPreview() {
     // This prevents getBoundingClientRect() from returning 0 or stale dimensions
     requestAnimationFrame(() => {
       applyAutoFitLayout();
+      // Update separator after layout so measurements are accurate
+      requestAnimationFrame(() => updateLakeLabelSeparator());
     });
   }
 
 }
+
+function updateLakeLabelSeparator() {
+  const sep = document.getElementById('lake-label-separator');
+  if (!sep) return;
+
+  // Measure lake name width
+  let nameWidth = 0;
+  try {
+    const r = lakeLabelName.getBoundingClientRect();
+    nameWidth = Math.round(r.width) || 0;
+  } catch (_) { nameWidth = 0; }
+
+  // Fallback to parent width if name empty
+  if (!nameWidth) {
+    const parentW = lakeLabelName.parentElement ? lakeLabelName.parentElement.getBoundingClientRect().width : 0;
+    nameWidth = Math.round(parentW * 0.6);
+  }
+
+  sep.style.width = nameWidth + 'px';
+
+  // Colour: use first SVG path fill if available, otherwise default
+  let fill = '#1e4d7b';
+  try {
+    const path = lakeSilhouetteSvg.querySelector('path');
+    if (path) {
+      fill = path.getAttribute('fill') || window.getComputedStyle(path).fill || fill;
+    }
+  } catch (_) {}
+
+  sep.style.backgroundColor = fill;
+}
+
+// Update separator on window resize to keep it in sync with responsive layout
+window.addEventListener('resize', () => {
+  requestAnimationFrame(updateLakeLabelSeparator);
+});
 
 function fitLakeSilhouette(geojson) {
 

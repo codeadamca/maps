@@ -37,9 +37,9 @@ body {
 
 body {
   font-family: Inter, system-ui, -apple-system, sans-serif;
-  background: var(--preview-bg);
+  /* background: var(--preview-bg); */
   color: var(--sidebar-text);
-  overflow: hidden;
+  overflow: auto;
 }
 
 /* Center the page content without forcing `.home` to stretch */
@@ -54,7 +54,7 @@ body {
 .home {
   display: grid;
   place-items: center;
-  background: var(--preview-bg);
+  background: inherit;
   color: var(--sidebar-text);
   width: min(1040px, 100%);
   display: grid;
@@ -63,6 +63,23 @@ body {
 
 .hero {
   padding: 12px 4px;
+}
+
+.hero-actions {
+  margin-top: 14px;
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  justify-content: flex-start;
+  max-width: 680px;
+}
+.hero-actions .btn-primary,
+.hero-actions .btn-secondary {
+  width: auto;
+  padding: 10px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .hero h1 {
@@ -128,7 +145,7 @@ body {
   margin: 0;
   color: var(--sidebar-muted);
   line-height: 1.6;
-  max-width: 34ch;
+  /* max-width: 34ch; */
 }
 
 .card-cta {
@@ -182,11 +199,78 @@ body {
   .home .card { padding: 22px; }
 }
 
+/* Coming soon page: make the main 'box' full-width */
+.home.coming-soon {
+  /* match home container width */
+  width: min(1040px, 100%);
+  display: grid;
+  place-items: center;
+  padding: 48px 24px;
+  margin: 0 auto;
+}
+.home.coming-soon .hero {
+  width: 100%;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.home.coming-soon > div {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 18px;
+}
+.home.coming-soon .card {
+  width: min(520px, 48%);
+}
+
+/* Two-column layout for coming-soon card */
+.home.coming-soon .card-columns {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  align-items: start;
+}
+.home.coming-soon .card-col--left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.home.coming-soon .card-col--right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+.home.coming-soon .coming-image {
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  max-height: 280px;
+  object-fit: cover;
+  border-radius: 12px;
+  display: block;
+}
+
+@media (max-width: 760px) {
+  .home.coming-soon .card-columns {
+    grid-template-columns: 1fr;
+  }
+  .home.coming-soon .coming-image {
+    max-height: 200px;
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
 /* App styles */
 .app {
   display: flex;
-  height: 100vh;
+  min-height: 100vh;
   width: 100vw;
+  background: inherit;
 }
 
 .sidebar {
@@ -582,6 +666,8 @@ select:focus {
   justify-content: center;
   padding: 24px;
   position: relative;
+  font-family: 'Baskervville', serif;
+  background: inherit;
 }
 
 .preview-toolbar {
@@ -812,7 +898,7 @@ select:focus {
 #lake-label-name,
 #lake-label-region,
 #lake-label-coordinates {
-  font-family: 'Cormorant', serif;
+  font-family: 'Baskervville', serif;
 }
 #lake-label-name {
   text-transform: uppercase;
@@ -1427,6 +1513,33 @@ select:focus {
   color: #000000;
   letter-spacing: 0.5px;
   margin-top: 4px;
+}
+
+/* Increase spacing between region and coordinates by moving
+   the name+region up half the extra space and coords down half. */
+.lake-labels-area h2,
+.lake-labels-area p:first-of-type {
+  transform: translateY(-8px);
+}
+
+.lake-labels-area p:nth-child(3) {
+  transform: translateY(8px);
+}
+
+/* Separator line between region and coordinates */
+.lake-label-separator {
+  height: 2px;
+  width: 120px; /* default; JS will override to match name width */
+  background: var(--lake-sep-color, #1e4d7b);
+  margin: 0;
+  transition: width 160ms ease, background-color 160ms ease;
+}
+
+.lake-labels-area h2,
+.lake-labels-area p:first-of-type,
+.lake-label-separator {
+  /* ensure these elements are rendered in normal flow for transform positioning */
+  display: block;
 }
 
 /* Theme Grid */

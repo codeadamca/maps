@@ -163,6 +163,14 @@ app.get('/lake/:id', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'lake.html'));
 });
 
+app.get('/coming-soon', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'coming-soon.html'));
+});
+
+app.get('/coming-soon/:id', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'coming-soon.html'));
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/api/config', (_req, res) => {
