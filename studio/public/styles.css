@@ -42,10 +42,11 @@ body {
   overflow: auto;
 }
 
-/* Center the page content without forcing `.home` to stretch */
+/* Layout: keep horizontal centering but allow normal document flow vertically
+   so tall pages can scroll. Use `flex-start` to avoid clipping content. */
 body {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
 }
 
@@ -268,9 +269,11 @@ body {
 /* App styles */
 .app {
   display: flex;
-  min-height: 100vh;
-  width: 100vw;
+  height: 100vh; /* fix to viewport height to prevent page scrolling */
+  width: 100%;
+  max-width: 100%;
   background: inherit;
+  overflow: hidden; /* hide overflowing document content so the page doesn't scroll */
 }
 
 .sidebar {

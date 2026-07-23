@@ -19,6 +19,30 @@ const lakeGeometryCache = new Map();
 let nominatimQueue = Promise.resolve();
 let nextNominatimRequestAt = 0;
 
+let overpassQueue = Promise.resolve();
+
+/*
+async function fetchOverpassJson(body) {
+  const url = 'https://overpass-api.de/api/interpreter';
+  const requestTask = overpassQueue.catch(() => undefined).then(async () => {
+    const response = await fetch(url, { method: 'POST', body, headers: { 'Content-Type': 'text/plain' } });
+    if (!response.ok) {
+      throw new Error(`Overpass service unavailable (${response.status})`);
+    }
+    const payload = await response.json();
+    return payload && Array.isArray(payload.elements) ? payload.elements : [];
+  });
+
+  overpassQueue = requestTask.then(() => undefined, () => undefined);
+  return requestTask;
+}
+
+function escapeForOverpassRegex(s) {
+  if (!s) return '';
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+*/
+
 function getNominatimHeaders() {
   return {
     'Accept': 'application/json',
@@ -77,8 +101,22 @@ function isLakeLikeResult(item, allowedCodes, lakeTypes) {
   const addressType = String(item.addresstype || '').toLowerCase();
   const labelText = `${item.display_name || ''} ${item.name || ''}`.toLowerCase();
 
+  // Prefer explicit OSM tags exposed via Nominatim `extratags` when available
+  const extra = item.extratags || {};
+  const extraNatural = String(extra.natural || '').toLowerCase();
+  const extraWater = String(extra.water || '').toLowerCase();
+  const extraLanduse = String(extra.landuse || '').toLowerCase();
+  const extraPlace = String(extra.place || '').toLowerCase();
+
   if (!allowedCodes.has(countryCode)) return false;
 
+  // Strong signals from extratags
+  if (extraNatural === 'water') return true;
+  if (extraWater && lakeTypes.has(extraWater)) return true;
+  if (extraPlace === 'lake') return true;
+  if (extraLanduse === 'reservoir') return true;
+
+  // Fallback to class/type/addressType or name matching
   return lakeTypes.has(typeName)
     || lakeTypes.has(addressType)
     || (className === 'natural' && typeName === 'water')
@@ -182,14 +220,18 @@ app.get('/api/config', (_req, res) => {
 });
 
 app.get('/api/search', async (req, res) => {
-  const query = String(req.query.q || '').trim();
+  let query = String(req.query.q || '').trim();
 
   if (query.length < 2) {
     res.json([]);
     return;
   }
 
-  const url = `${NOMINATIM_URL}/search?format=jsonv2&addressdetails=1&limit=6&countrycodes=us,ca&q=${encodeURIComponent(query)}`;
+  if (!query.toLowerCase().includes('lake')) {
+    query += ' lake';
+  }
+
+  const url = `${NOMINATIM_URL}/search?format=jsonv2&addressdetails=1&limit=10&countrycodes=us,ca&q=${encodeURIComponent(query)}`;
 
   try {
     
@@ -225,11 +267,16 @@ app.get('/api/search', async (req, res) => {
   * - Filters results to lake-like features in US and Canada
   */
 app.get('/api/lake-search', async (req, res) => {
-  const query = String(req.query.q || '').trim();
+  let query = String(req.query.q || '').trim();
 
   if (query.length < 2) {
     res.json([]);
     return;
+  }
+
+  if (!query.toLowerCase().includes('lake')) {
+    query1 = query + ' lake';
+    query2 = 'lake ' + query;
   }
 
   const ALLOWED_CODES = new Set(['us', 'ca']);
@@ -243,10 +290,12 @@ app.get('/api/lake-search', async (req, res) => {
   }
 
   try {
-    const url = `${NOMINATIM_URL}/search?format=jsonv2&addressdetails=1&limit=12&countrycodes=us,ca&q=${encodeURIComponent(query)}`;
-    const payload = await fetchNominatimJson(url);
-    const seen = new Set();
-    const results = payload
+    // Nominatim-based lake search (US + CA) with extratags for tag-based filtering
+    let url = `${NOMINATIM_URL}/search?dedupe=0&format=jsonv2&addressdetails=1&extratags=1&limit=50&countrycodes=us,ca&q=${encodeURIComponent(query1)}`;
+    let payload = await fetchNominatimJson(url);
+    let seen = new Set();
+
+    let results1 = (Array.isArray(payload) ? payload : [])
       .filter(item => isLakeLikeResult(item, ALLOWED_CODES, LAKE_TYPES))
       .filter(item => {
         const key = `${item.osm_type || ''}:${item.osm_id || ''}:${item.display_name || ''}`;
@@ -257,11 +306,39 @@ app.get('/api/lake-search', async (req, res) => {
       .slice(0, 6)
       .map(formatLakeResult);
 
-    setCachedLakeSearch(normalizedQuery, results);
-    res.json(results);
+    // setCachedLakeSearch(normalizedQuery, results);
+    // res.json(results);
+
+    url = `${NOMINATIM_URL}/search?dedupe=0&format=jsonv2&addressdetails=1&extratags=1&limit=50&countrycodes=us,ca&q=${encodeURIComponent(query2)}`;
+    payload = await fetchNominatimJson(url);
+    seen = new Set();
+
+    let results2 = (Array.isArray(payload) ? payload : [])
+      .filter(item => isLakeLikeResult(item, ALLOWED_CODES, LAKE_TYPES))
+      .filter(item => {
+        const key = `${item.osm_type || ''}:${item.osm_id || ''}:${item.display_name || ''}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 6)
+      .map(formatLakeResult);
+
+      // Return restuls1 and resutls2 filter for dupolkicates
+    const combinedResults = [...results1, ...results2];
+    const uniqueResults = combinedResults.filter((item, index, self) =>
+      index === self.findIndex((t) => (
+        t.osmType === item.osmType && t.osmId === item.osmId
+      ))
+    );
+    
+    setCachedLakeSearch(normalizedQuery, uniqueResults);
+    res.json(uniqueResults);
+
   } catch (error) {
     res.status(502).json({ error: 'Lake search request failed', details: error.message });
   }
+
 });
 
 app.get('/api/lake-geometry', async (req, res) => {
